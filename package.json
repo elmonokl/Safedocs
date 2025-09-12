@@ -1,0 +1,15 @@
+{
+  "name": "safedocs-monorepo",
+  "private": true,
+  "workspaces": [
+    "safedocs-backend",
+    "safedocs-frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run --workspace=safedocs-backend dev",
+    "dev:frontend": "npm run --workspace=safedocs-frontend dev"
+  },
+  "dependencies": {
+    "mongoose": "^8.16.1"
+  }
+}
