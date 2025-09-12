@@ -22,6 +22,17 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
   const uploadRef = useRef(null)
   const docsRef = useRef(null)
 
+  // Límite de tamaño (cliente): 50MB
+  const MAX_SIZE_BYTES = 50 * 1024 * 1024
+  const ALLOWED_TYPES = new Set([
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  ])
+
   const handleDrop = (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -32,6 +43,21 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
 
   const handleUpload = async (e) => {
     e.preventDefault()
+
+    // Validaciones cliente
+    if (!file) {
+      showToast && showToast('Debes seleccionar un archivo', 'warning')
+      return
+    }
+    if (file.size > MAX_SIZE_BYTES) {
+      showToast && showToast('El archivo supera 50MB', 'error')
+      return
+    }
+    if (file.type && !ALLOWED_TYPES.has(file.type)) {
+      showToast && showToast('Formato no permitido', 'error')
+      return
+    }
+
     const ok = await uploadDocument({ title, category, description, file })
     if (ok) {
       setTitle('')
@@ -105,7 +131,7 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
             >
               <Inbox className="w-8 h-8 mx-auto text-gray-400" />
               <p className="mt-3 text-gray-600">Arrastra aquí tu archivo o haz clic para seleccionarlo</p>
-              <p className="text-xs text-gray-400 mt-1">PDF, DOC, DOCX, TXT, PPT, PPTX (máx. 10MB)</p>
+              <p className="text-xs text-gray-400 mt-1">PDF, DOC, DOCX, TXT, PPT, PPTX (máx. 50MB)</p>
               {file && (
                 <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded bg-indigo-50 text-indigo-700 text-sm">
                   <FileUp className="w-4 h-4" /> {file.name}
