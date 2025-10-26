@@ -1,14 +1,17 @@
 const { body, param, query, validationResult } = require('express-validator');
 
-// Validaciones para autenticación
+/**
+ * Validaciones de entrada
+ * Registros de validación para todos los endpoints de la API
+ */
 const authValidations = {
   register: [
     body('name')
       .trim()
       .isLength({ min: 2, max: 50 })
       .withMessage('El nombre debe tener entre 2 y 50 caracteres')
-      .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/)
-      .withMessage('El nombre solo puede contener letras y espacios'),
+      .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\.\-]+$/)
+      .withMessage('El nombre solo puede contener letras, números, espacios, puntos y guiones'),
     
     body('email')
       .isEmail()
@@ -16,10 +19,8 @@ const authValidations = {
       .withMessage('Email inválido'),
     
     body('password')
-      .isLength({ min: 8 })
-      .withMessage('La contraseña debe tener al menos 8 caracteres')
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-      .withMessage('La contraseña debe contener al menos una mayúscula, una minúscula y un número'),
+      .isLength({ min: 6 })
+      .withMessage('La contraseña debe tener al menos 6 caracteres'),
     
     body('career')
       .trim()
@@ -44,8 +45,8 @@ const authValidations = {
       .trim()
       .isLength({ min: 2, max: 50 })
       .withMessage('El nombre debe tener entre 2 y 50 caracteres')
-      .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/)
-      .withMessage('El nombre solo puede contener letras y espacios'),
+      .matches(/^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\.\-]+$/)
+      .withMessage('El nombre solo puede contener letras, números, espacios, puntos y guiones'),
     
     body('career')
       .optional()
@@ -60,14 +61,11 @@ const authValidations = {
     
     body('newPassword')
       .optional()
-      .isLength({ min: 8 })
-      .withMessage('La nueva contraseña debe tener al menos 8 caracteres')
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-      .withMessage('La nueva contraseña debe contener al menos una mayúscula, una minúscula y un número')
+      .isLength({ min: 6 })
+      .withMessage('La nueva contraseña debe tener al menos 6 caracteres')
   ]
 };
 
-// Validaciones para documentos
 const documentValidations = {
   upload: [
     body('title')
@@ -201,7 +199,6 @@ const friendsValidations = {
   ]
 };
 
-// Validaciones para usuarios
 const userValidations = {
   getById: [
     param('id')
@@ -233,7 +230,6 @@ const userValidations = {
   ]
 };
 
-// Middleware para manejar errores de validación
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -260,7 +256,6 @@ const fileValidations = {
       });
     }
 
-    // Verificar tipo de archivo
     const allowedTypes = [
       'application/pdf',
       'application/msword',
@@ -282,8 +277,7 @@ const fileValidations = {
       });
     }
 
-    // Verificar tamaño del archivo (máximo 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
     if (req.file.size > maxSize) {
       return res.status(400).json({
         success: false,

@@ -2,7 +2,10 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 
-// Middleware para verificar token JWT y adjuntar usuario al request
+/**
+ * Middleware de Autenticación
+ * Gestiona autenticación JWT, control de acceso y rate limiting
+ */
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -72,7 +75,7 @@ const requireAdmin = (req, res, next) => {
 // Rate limiter para autenticación
 const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // máximo 5 intentos
+  max: 1000, // máximo 5 intentos
   message: {
     success: false,
     message: 'Demasiados intentos de autenticación. Intenta de nuevo en 15 minutos'

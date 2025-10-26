@@ -1,9 +1,11 @@
-// src/contexts/DocumentContext.jsx
-// Maneja el estado de documentos del usuario: carga, subida, descarga y borrado.
-// Expone filtros y orden para mejorar la UX en cliente.
 import { createContext, useContext, useState, useEffect } from 'react'
 import { apiFetch } from '../utils/api'
+import { useAuth } from './AuthContext'
 
+/**
+ * Context de Documentos
+ * Gestiona el estado global de documentos del usuario
+ */
 const DocumentContext = createContext()
 
 export const useDocuments = () => {
@@ -15,6 +17,7 @@ export const useDocuments = () => {
 }
 
 export const DocumentProvider = ({ children }) => {
+  const { user } = useAuth()
   const [documents, setDocuments] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -23,33 +26,51 @@ export const DocumentProvider = ({ children }) => {
   const [sortBy, setSortBy] = useState('date')
 
   useEffect(() => {
-    loadDocuments()
-  }, [])
+    if (user) {
+      loadDocuments()
+    } else {
+      setDocuments([])
+    }
+  }, [user])
 
   const loadDocuments = async () => {
+    if (!user) {
+      setDocuments([])
+      return
+    }
+
     setLoading(true)
+    setError('')
     try {
       const resp = await apiFetch('/api/documents/my-documents')
-      const docs = resp?.data?.documents || []
-      const mapped = docs.map(d => ({
-        id: d._id || d.id,
-        title: d.title,
-        category: d.category,
-        date: d.createdAt || d.date,
-        size: (typeof d.fileSize === 'number' ? `${(d.fileSize / (1024*1024)).toFixed(1)} MB` : (d.size || '')),
-        description: d.description || '',
-        author: d.author?.name || '',
-        downloads: typeof d.downloadsCount === 'number' ? d.downloadsCount : (d.downloads || 0)
-      }))
-      setDocuments(mapped)
+      if (resp?.success && resp?.data?.documents) {
+        const docs = resp.data.documents
+        const mapped = docs.map(d => ({
+          id: d._id || d.id,
+          title: d.title,
+          category: d.category,
+          date: d.createdAt || d.date,
+          size: (typeof d.fileSize === 'number' ? `${(d.fileSize / (1024*1024)).toFixed(1)} MB` : (d.size || '')),
+          description: d.description || '',
+          author: d.author?.name || user.name || '',
+          downloads: typeof d.downloadsCount === 'number' ? d.downloadsCount : (d.downloads || 0)
+        }))
+        setDocuments(mapped)
+      }
     } catch (err) {
-      setError('Error al cargar documentos')
+      setError('Error al cargar documentos: ' + err.message)
+      setDocuments([])
     } finally {
       setLoading(false)
     }
   }
 
   const uploadDocument = async (documentData) => {
+    if (!user) {
+      setError('Debes estar autenticado para subir documentos')
+      return false
+    }
+
     setLoading(true)
     setError('')
     
@@ -71,20 +92,24 @@ export const DocumentProvider = ({ children }) => {
         method: 'POST',
         body: form
       })
-      const d = resp?.data?.document
-      if (!d) return true
-      const mapped = {
-        id: d._id || d.id,
-        title: d.title,
-        category: d.category,
-        date: d.createdAt,
-        size: (typeof d.fileSize === 'number' ? `${(d.fileSize / (1024*1024)).toFixed(1)} MB` : ''),
-        description: d.description || '',
-        author: d.author?.name || '',
-        downloads: d.downloadsCount || 0
+      
+      if (resp?.success && resp?.data?.document) {
+        const d = resp.data.document
+        const mapped = {
+          id: d._id || d.id,
+          title: d.title,
+          category: d.category,
+          date: d.createdAt,
+          size: (typeof d.fileSize === 'number' ? `${(d.fileSize / (1024*1024)).toFixed(1)} MB` : ''),
+          description: d.description || '',
+          author: d.author?.name || user.name || '',
+          downloads: d.downloadsCount || 0
+        }
+        setDocuments(prev => [mapped, ...prev])
+        return true
+      } else {
+        throw new Error(resp?.message || 'Error al subir documento')
       }
-      setDocuments(prev => [mapped, ...prev])
-      return true
     } catch (err) {
       setError(err.message || 'Error al subir documento')
       return false
@@ -120,14 +145,14 @@ export const DocumentProvider = ({ children }) => {
       link.click()
       link.remove()
 
-      setDocuments(prev => 
-        prev.map(doc => 
-          doc.id === documentId 
+      setDocuments(prev =>
+        prev.map(doc =>
+          doc.id === documentId
             ? { ...doc, downloads: doc.downloads + 1 }
             : doc
         )
       )
-      
+
       return true
     } catch (err) {
       setError('Error al descargar documento')

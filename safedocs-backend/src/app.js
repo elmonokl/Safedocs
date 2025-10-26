@@ -5,19 +5,19 @@ const morgan = require('morgan');
 const path = require('path');
 require('dotenv').config();
 
-// Importar rutas
+// Rutas
 const authRoutes = require('./routes/auth');
 const documentRoutes = require('./routes/documents');
 const friendsRoutes = require('./routes/friends');
 const adminRoutes = require('./routes/admin');
 const auditRoutes = require('./routes/audit');
 
-// Importar middleware
+// Middleware
 const { generalRateLimiter } = require('./middleware/auth');
 
 const app = express();
 
-// Configuración de seguridad
+// Seguridad
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -29,25 +29,44 @@ app.use(helmet({
   },
 }));
 
-// Configurar CORS
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-  'http://localhost:5173',
-  'http://localhost:5174'
-];
-
+// CORS para desarrollo
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // permitir herramientas locales
-    if (allowedOrigins.includes(origin)) return callback(null, true);
+    // Permitir sin origen (herramientas locales como Postman)
+    if (!origin) return callback(null, true);
+    
+    // Permitir cualquier localhost en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+    }
+    
+    // En producción, usar solo los orígenes permitidos
+    const allowedOrigins = [
+      process.env.FRONTEND_URL,
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:4173',
+      'http://localhost:4174'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    console.log('CORS: Origen no permitido:', origin);
     return callback(new Error('CORS: origen no permitido')); 
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
 }));
 
-// Rate limiting general
+// Rate limiting
 app.use(generalRateLimiter);
 
 // Logging
@@ -57,11 +76,11 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Parse JSON bodies
+// Parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Servir archivos estáticos
+// Archivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check
@@ -74,14 +93,14 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Rutas de la API
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/friends', friendsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/audit', auditRoutes);
 
-// Middleware para manejar rutas no encontradas
+// 404 Handler
 app.use('*', (req, res) => {
   res.status(404).json({
     success: false,
@@ -90,7 +109,7 @@ app.use('*', (req, res) => {
   });
 });
 
-// Middleware para manejar errores globales
+// Error Handler
 app.use((error, req, res, next) => {
   console.error('Error no manejado:', error);
 
@@ -109,7 +128,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // Error de validación de multer
   if (error.message && error.message.includes('Solo se permiten')) {
     return res.status(400).json({
       success: false,
@@ -117,7 +135,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // Error de JWT
   if (error.name === 'JsonWebTokenError') {
     return res.status(401).json({
       success: false,
@@ -132,7 +149,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // Error de MongoDB
   if (error.name === 'ValidationError') {
     return res.status(400).json({
       success: false,
@@ -151,7 +167,6 @@ app.use((error, req, res, next) => {
     });
   }
 
-  // Error genérico
   res.status(500).json({
     success: false,
     message: 'Error interno del servidor',
@@ -159,7 +174,7 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Manejar señales de terminación
+// Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM recibido, cerrando servidor...');
   process.exit(0);

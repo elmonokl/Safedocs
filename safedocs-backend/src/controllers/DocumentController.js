@@ -1,19 +1,19 @@
 const Document = require('../models/Document');
 const User = require('../models/User');
+const AuditLog = require('../models/AuditLog');
 const path = require('path');
 const fs = require('fs').promises;
 // Validaciones ya son manejadas en rutas con handleValidationErrors
 const { documentUpload } = require('../middleware/upload');
 
-// Upload centralizado
 const upload = documentUpload;
 
 /**
  * Controlador de Documentos
- * Subida, lectura, descarga, actualización y eliminación de documentos.
- * Upload centralizado con middleware/upload y validaciones en rutas.
+ * Gestiona CRUD completo de documentos y archivos
  */
 class DocumentController {
+  // Mapea categorías del frontend al modelo
   static mapCategoryToModel(category) {
     const mapping = {
       'Apuntes': 'academic',
@@ -23,7 +23,8 @@ class DocumentController {
     };
     return mapping[category] || category;
   }
-  // Subir documento
+
+  // Subir nuevo documento
   static async uploadDocument(req, res, next) {
     try {
 
@@ -38,7 +39,6 @@ class DocumentController {
       const { title, description } = req.body;
       const category = DocumentController.mapCategoryToModel(req.body.category);
 
-      // Crear documento en la base de datos
       const documentData = {
         userId,
         title,
@@ -54,6 +54,15 @@ class DocumentController {
       const populatedDocument = await Document.findById(newDocument._id)
         .populate('author', 'name career profilePicture');
 
+      await AuditLog.createLog({
+        userId: userId, // El propietario del documento
+        actorId: userId, // Quien realizó la acción
+        documentId: newDocument._id,
+        action: 'upload',
+        description: `Documento "${title}" subido exitosamente`,
+        comment: description || ''
+      });
+
       res.status(201).json({
         success: true,
         message: 'Documento subido exitosamente',
@@ -63,12 +72,12 @@ class DocumentController {
       });
 
     } catch (error) {
-      // Eliminar archivo si se subió pero falló la base de datos
+      // Rollback: eliminar archivo si falla la BD
       if (req.file) {
         try {
           await fs.unlink(req.file.path);
         } catch (unlinkError) {
-          // No interrumpir el flujo; pasar error principal al manejador global
+          // Ignorar error de unlink
         }
       }
       next(error);
@@ -184,7 +193,6 @@ class DocumentController {
         });
       }
 
-      // Verificar que el archivo existe
       try {
         await fs.access(document.filePath);
       } catch (error) {
@@ -194,10 +202,20 @@ class DocumentController {
         });
       }
 
-      // Incrementar contador de descargas
       await document.incrementDownloads();
 
-      // Enviar archivo
+      const userId = req.user?.userId || null;
+      if (userId) {
+        await AuditLog.createLog({
+          userId: document.userId, // El propietario del documento
+          actorId: userId, // Quien descargó el documento
+          documentId: document._id,
+          action: 'download',
+          description: `Documento "${document.title}" descargado`,
+          comment: `Descarga #${document.downloadsCount + 1}`
+        });
+      }
+
       res.download(document.filePath, document.fileName);
 
     } catch (error) {
@@ -214,7 +232,6 @@ class DocumentController {
       const { title, description } = req.body;
       const category = req.body.category ? DocumentController.mapCategoryToModel(req.body.category) : undefined;
 
-      // Verificar que el documento existe y pertenece al usuario
       const document = await Document.findById(id);
       if (!document) {
         return res.status(404).json({
@@ -230,7 +247,6 @@ class DocumentController {
         });
       }
 
-      // Actualizar documento
       const updateData = {};
       if (title) updateData.title = title;
       if (description !== undefined) updateData.description = description;
@@ -277,14 +293,22 @@ class DocumentController {
         });
       }
 
-      // Eliminar archivo físico
+      // Eliminar archivo del sistema
       try {
         await fs.unlink(document.filePath);
       } catch (error) {
         console.warn('No se pudo eliminar el archivo físico:', error.message);
       }
 
-      // Eliminar documento de la base de datos
+      await AuditLog.createLog({
+        userId: userId, // El propietario del documento
+        actorId: userId, // Quien realizó la acción
+        documentId: document._id,
+        action: 'delete',
+        description: `Documento "${document.title}" eliminado exitosamente`,
+        comment: `Archivo: ${document.fileName}`
+      });
+
       await Document.findByIdAndDelete(id);
 
       res.json({

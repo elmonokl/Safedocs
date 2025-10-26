@@ -1,6 +1,5 @@
-// src/App.jsx
-import React, { useState } from 'react'
-import { AuthProvider } from './contexts/AuthContext'
+import React, { useState, useEffect } from 'react'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { DocumentProvider } from './contexts/DocumentContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import Hero from './components/Hero'
@@ -17,33 +16,46 @@ import VistaAuditoria from './components/VistaAuditoria'
 import VistaVistos from './components/VistaVistos'
 import Toast from './components/Toast'
 import ConfirmDialog from './components/ConfirmDialog'
+import LoadingSpinner from './components/LoadingSpinner'
 
-// App: orquesta el enrutamiento por vista y provee contextos globales.
-// Mantiene el estado de navegación simple (sin react-router) y
-// expone utilidades para toasts y diálogos de confirmación.
-function App() {
-  const [vista, setVista] = useState('dashboard')
+/**
+ * App Principal
+ * Maneja la navegación y estado global
+ */
+function AppContent() {
+  const { user, loading } = useAuth()
+  const [vista, setVista] = useState('inicio')
   const [toast, setToast] = useState(null)
   const [confirmDialog, setConfirmDialog] = useState(null)
 
-  // Navegación rápida al dashboard de documentos
+  useEffect(() => {
+    if (!loading) {
+      if (user) {
+        setVista('dashboard')
+      } else {
+        setVista('inicio')
+      }
+    }
+  }, [user, loading])
+
+  if (loading) {
+    return <LoadingSpinner />
+  }
+
   const irADocumentos = () => setVista('dashboard')
 
-  // API para mostrar toasts desde componentes hijos
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
   }
 
-  // API para mostrar diálogos de confirmación reutilizables
   const showConfirmDialog = (config) => {
     setConfirmDialog(config)
   }
 
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <DocumentProvider>
-          <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-100 dark:from-gray-900 dark:via-gray-950 dark:to-black">
+    <ThemeProvider>
+      <DocumentProvider>
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-100 dark:from-gray-900 dark:via-gray-950 dark:to-black">
           {vista === 'inicio' && <Hero cambiarVista={setVista} />}
           {vista === 'login' && <Login cambiarVista={setVista} showToast={showToast} />}
           {vista === 'registro' && <Registro cambiarVista={setVista} showToast={showToast} />}
@@ -86,11 +98,16 @@ function App() {
               type={confirmDialog.type}
             />
           )}
+        </div>
+      </DocumentProvider>
+    </ThemeProvider>
+  )
+}
 
-          {/* Botón flotante eliminado por solicitud del usuario */}
-          </div>
-        </DocumentProvider>
-      </ThemeProvider>
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
     </AuthProvider>
   )
 }
