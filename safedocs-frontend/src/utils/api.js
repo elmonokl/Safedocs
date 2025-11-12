@@ -31,8 +31,23 @@ export async function apiFetch(path, { method = 'GET', body, headers = {} } = {}
   }
 
   if (!response.ok) {
+    // Manejo especial para errores de rate limiting
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('Retry-After') || response.headers.get('X-RateLimit-Reset');
+      const message = data?.message || 'Demasiadas solicitudes';
+      const retrySeconds = data?.retryAfter || (retryAfter ? parseInt(retryAfter) : null);
+      
+      const error = new Error(message);
+      error.status = 429;
+      error.retryAfter = retrySeconds;
+      error.resetTime = data?.resetTime || null;
+      throw error;
+    }
+    
     const message = data?.message || 'Error de red';
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return data;

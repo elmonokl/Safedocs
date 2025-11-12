@@ -26,6 +26,13 @@ const documentSchema = new mongoose.Schema({
       message: 'Categoría debe ser: academic, research, project, other'
     }
   },
+  course: {
+    type: String,
+    required: false, // Hacer opcional para compatibilidad con documentos existentes
+    trim: true,
+    maxlength: [100, 'El nombre del curso no puede tener más de 100 caracteres'],
+    default: ''
+  },
   fileName: {
     type: String,
     required: [true, 'El nombre del archivo es obligatorio']
@@ -54,7 +61,13 @@ const documentSchema = new mongoose.Schema({
   tags: [{
     type: String,
     trim: true
-  }]
+  }],
+  shareToken: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true
+  }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -64,9 +77,11 @@ const documentSchema = new mongoose.Schema({
 // Índices para optimizar consultas
 documentSchema.index({ userId: 1 });
 documentSchema.index({ category: 1 });
+documentSchema.index({ course: 1 });
 documentSchema.index({ createdAt: -1 });
 documentSchema.index({ downloadsCount: -1 });
 documentSchema.index({ title: 'text', description: 'text' });
+documentSchema.index({ shareToken: 1 });
 
 // Virtual para obtener información del autor
 documentSchema.virtual('author', {
@@ -81,6 +96,19 @@ documentSchema.virtual('author', {
 documentSchema.methods.incrementDownloads = function() {
   this.downloadsCount += 1;
   return this.save();
+};
+
+// Método para generar token de compartir
+documentSchema.methods.generateShareToken = function() {
+  const crypto = require('crypto');
+  this.shareToken = crypto.randomBytes(32).toString('hex');
+  return this.save();
+};
+
+// Método estático para encontrar documento por token
+documentSchema.statics.findByShareToken = function(token) {
+  return this.findOne({ shareToken: token })
+    .populate('author', 'name career profilePicture');
 };
 
 // Método estático para obtener documentos con información del autor

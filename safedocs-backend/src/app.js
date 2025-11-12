@@ -13,7 +13,7 @@ const adminRoutes = require('./routes/admin');
 const auditRoutes = require('./routes/audit');
 
 // Middleware
-const { generalRateLimiter } = require('./middleware/auth');
+// const { generalRateLimiter } = require('./middleware/auth'); // Rate limiting desactivado
 
 const app = express();
 
@@ -66,8 +66,8 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 
-// Rate limiting
-app.use(generalRateLimiter);
+// Rate limiting - DESACTIVADO
+// app.use(generalRateLimiter);
 
 // Logging
 if (process.env.NODE_ENV === 'development') {

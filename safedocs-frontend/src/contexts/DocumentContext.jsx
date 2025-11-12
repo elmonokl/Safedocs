@@ -6,6 +6,30 @@ import { useAuth } from './AuthContext'
  * Context de Documentos
  * Gestiona el estado global de documentos del usuario
  */
+
+// Mapeo de categorías del backend (inglés) al frontend (español)
+const CATEGORY_MAP = {
+  'academic': 'Apuntes',
+  'research': 'Guías',
+  'project': 'Resumen',
+  'other': 'Otro'
+}
+
+// Función auxiliar para mapear documentos del backend al frontend
+const mapDocument = (doc, user) => ({
+  id: doc._id || doc.id,
+  title: doc.title,
+  category: CATEGORY_MAP[doc.category] || doc.category,
+  course: doc.course || '',
+  date: doc.createdAt || doc.date,
+  size: typeof doc.fileSize === 'number' 
+    ? `${(doc.fileSize / (1024 * 1024)).toFixed(1)} MB` 
+    : (doc.size || ''),
+  description: doc.description || '',
+  author: doc.author?.name || user?.name || '',
+  downloads: typeof doc.downloadsCount === 'number' ? doc.downloadsCount : (doc.downloads || 0)
+})
+
 const DocumentContext = createContext()
 
 export const useDocuments = () => {
@@ -44,17 +68,7 @@ export const DocumentProvider = ({ children }) => {
     try {
       const resp = await apiFetch('/api/documents/my-documents')
       if (resp?.success && resp?.data?.documents) {
-        const docs = resp.data.documents
-        const mapped = docs.map(d => ({
-          id: d._id || d.id,
-          title: d.title,
-          category: d.category,
-          date: d.createdAt || d.date,
-          size: (typeof d.fileSize === 'number' ? `${(d.fileSize / (1024*1024)).toFixed(1)} MB` : (d.size || '')),
-          description: d.description || '',
-          author: d.author?.name || user.name || '',
-          downloads: typeof d.downloadsCount === 'number' ? d.downloadsCount : (d.downloads || 0)
-        }))
+        const mapped = resp.data.documents.map(doc => mapDocument(doc, user))
         setDocuments(mapped)
       }
     } catch (err) {
@@ -78,6 +92,9 @@ export const DocumentProvider = ({ children }) => {
       if (!documentData.title || !documentData.category) {
         throw new Error('Título y categoría son obligatorios')
       }
+      if (!documentData.course) {
+        throw new Error('El curso es obligatorio')
+      }
       if (!documentData.file) {
         throw new Error('Debes seleccionar un archivo')
       }
@@ -86,7 +103,10 @@ export const DocumentProvider = ({ children }) => {
       form.append('file', documentData.file)
       form.append('title', documentData.title)
       form.append('category', documentData.category)
-      if (documentData.description) form.append('description', documentData.description)
+      form.append('course', documentData.course)
+      if (documentData.description) {
+        form.append('description', documentData.description)
+      }
 
       const resp = await apiFetch('/api/documents/upload', {
         method: 'POST',
@@ -94,17 +114,7 @@ export const DocumentProvider = ({ children }) => {
       })
       
       if (resp?.success && resp?.data?.document) {
-        const d = resp.data.document
-        const mapped = {
-          id: d._id || d.id,
-          title: d.title,
-          category: d.category,
-          date: d.createdAt,
-          size: (typeof d.fileSize === 'number' ? `${(d.fileSize / (1024*1024)).toFixed(1)} MB` : ''),
-          description: d.description || '',
-          author: d.author?.name || user.name || '',
-          downloads: d.downloadsCount || 0
-        }
+        const mapped = mapDocument(resp.data.document, user)
         setDocuments(prev => [mapped, ...prev])
         return true
       } else {
@@ -118,14 +128,56 @@ export const DocumentProvider = ({ children }) => {
     }
   }
 
-  const deleteDocument = async (documentId) => {
+  const updateDocument = async (documentId, updateData) => {
+    if (!user) {
+      setError('Debes estar autenticado para actualizar documentos')
+      return false
+    }
+
     setLoading(true)
+    setError('')
+    
     try {
-      await apiFetch(`/api/documents/${documentId}`, { method: 'DELETE' })
-      setDocuments(prev => prev.filter(doc => doc.id !== documentId))
-      return true
+      const resp = await apiFetch(`/api/documents/${documentId}`, {
+        method: 'PUT',
+        body: updateData
+      })
+      
+      if (resp?.success && resp?.data?.document) {
+        const mapped = mapDocument(resp.data.document, user)
+        setDocuments(prev => prev.map(doc => doc.id === documentId ? mapped : doc))
+        return true
+      } else {
+        throw new Error(resp?.message || 'Error al actualizar documento')
+      }
     } catch (err) {
-      setError('Error al eliminar documento')
+      setError(err.message || 'Error al actualizar documento')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const deleteDocument = async (documentId) => {
+    if (!user) {
+      setError('Debes estar autenticado para eliminar documentos')
+      return false
+    }
+
+    setLoading(true)
+    setError('')
+    try {
+      const resp = await apiFetch(`/api/documents/${documentId}`, { method: 'DELETE' })
+      
+      if (resp?.success) {
+        setDocuments(prev => prev.filter(doc => doc.id !== documentId))
+        return true
+      } else {
+        throw new Error(resp?.message || 'Error al eliminar documento')
+      }
+    } catch (err) {
+      setError(err.message || 'Error al eliminar documento')
+      console.error('Error al eliminar documento:', err)
       return false
     } finally {
       setLoading(false)
@@ -133,29 +185,72 @@ export const DocumentProvider = ({ children }) => {
   }
 
   const downloadDocument = async (documentId) => {
+    if (!user) {
+      setError('Debes estar autenticado para descargar documentos')
+      return false
+    }
+
     try {
       const token = localStorage.getItem('token')
-      const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : 'http://localhost:3000'
+      if (!token) {
+        setError('Token de autenticación no encontrado')
+        return false
+      }
+
+      const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) 
+        ? import.meta.env.VITE_API_URL 
+        : 'http://localhost:3000'
       const url = `${base}/api/documents/${documentId}/download`
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ 
+          message: 'Error al descargar documento' 
+        }))
+        throw new Error(errorData.message || 'Error al descargar documento')
+      }
+
+      const blob = await response.blob()
+      
+      // Obtener el nombre del archivo del header Content-Disposition
+      const contentDisposition = response.headers.get('Content-Disposition')
+      let fileName = `documento-${documentId}`
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+        if (fileNameMatch) {
+          fileName = fileNameMatch[1].replace(/['"]/g, '')
+        }
+      }
+
+      // Crear un enlace temporal para descargar el archivo
+      const blobUrl = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = url
-      if (token) link.setAttribute('Authorization', `Bearer ${token}`)
-      link.target = '_blank'
+      link.href = blobUrl
+      link.download = fileName
       document.body.appendChild(link)
       link.click()
-      link.remove()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(blobUrl)
 
+      // Actualizar el contador de descargas localmente
       setDocuments(prev =>
         prev.map(doc =>
           doc.id === documentId
-            ? { ...doc, downloads: doc.downloads + 1 }
+            ? { ...doc, downloads: (doc.downloads || 0) + 1 }
             : doc
         )
       )
 
       return true
     } catch (err) {
-      setError('Error al descargar documento')
+      setError(err.message || 'Error al descargar documento')
+      console.error('Error al descargar documento:', err)
       return false
     }
   }
@@ -180,6 +275,61 @@ export const DocumentProvider = ({ children }) => {
     }
   })
 
+  const generateShareLink = async (documentId) => {
+    if (!user) {
+      setError('Debes estar autenticado para compartir documentos')
+      return null
+    }
+
+    setLoading(true)
+    setError('')
+    
+    try {
+      const resp = await apiFetch(`/api/documents/${documentId}/share`, {
+        method: 'POST'
+      })
+      
+      if (resp?.success && resp?.data) {
+        return resp.data
+      } else {
+        throw new Error(resp?.message || 'Error al generar link de compartir')
+      }
+    } catch (err) {
+      setError(err.message || 'Error al generar link de compartir')
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const shareWithFriends = async (documentId, friendIds, message) => {
+    if (!user) {
+      setError('Debes estar autenticado para compartir documentos')
+      return false
+    }
+
+    setLoading(true)
+    setError('')
+    
+    try {
+      const resp = await apiFetch(`/api/documents/${documentId}/share-friends`, {
+        method: 'POST',
+        body: { friendIds, message }
+      })
+      
+      if (resp?.success) {
+        return true
+      } else {
+        throw new Error(resp?.message || 'Error al compartir con amigos')
+      }
+    } catch (err) {
+      setError(err.message || 'Error al compartir con amigos')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const value = {
     documents: sortedDocuments,
     loading,
@@ -191,8 +341,12 @@ export const DocumentProvider = ({ children }) => {
     setFilterCategory,
     setSortBy,
     uploadDocument,
+    updateDocument,
     deleteDocument,
     downloadDocument,
+    loadDocuments,
+    generateShareLink,
+    shareWithFriends,
     clearError: () => setError('')
   }
 
@@ -201,4 +355,4 @@ export const DocumentProvider = ({ children }) => {
       {children}
     </DocumentContext.Provider>
   )
-} 
+}

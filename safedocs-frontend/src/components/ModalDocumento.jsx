@@ -1,11 +1,20 @@
 // src/components/ModalDocumento.jsx
-import React from 'react'
+import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useDocuments } from '../contexts/DocumentContext'
-import { Download, Calendar, User, FileText, X } from 'lucide-react'
+import { Download, Calendar, User, FileText, X, Edit, Trash2, Share2 } from 'lucide-react'
+import EditDocumentModal from './EditDocumentModal'
+import ConfirmDialog from './ConfirmDialog'
+import ShareQRModal from './ShareQRModal'
 
-function ModalDocumento({ documento, onClose }) {
-  const { downloadDocument } = useDocuments()
+function ModalDocumento({ documento, onClose, onDocumentUpdated, onDocumentDeleted }) {
+  const { downloadDocument, deleteDocument, generateShareLink, error } = useDocuments()
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [shareUrl, setShareUrl] = useState('')
+  const [loadingShare, setLoadingShare] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
   
   if (!documento) return null
 
@@ -13,6 +22,41 @@ function ModalDocumento({ documento, onClose }) {
     const success = await downloadDocument(documento.id)
     if (success) {
       onClose()
+    }
+  }
+
+  const handleEdit = () => {
+    setShowEditModal(true)
+  }
+
+  const handleDelete = async () => {
+    setDeleteError('')
+    const success = await deleteDocument(documento.id)
+    if (success) {
+      onDocumentDeleted && onDocumentDeleted()
+      onClose()
+    } else {
+      setDeleteError(error || 'No se pudo eliminar el documento')
+    }
+  }
+
+  const handleEditSuccess = () => {
+    onDocumentUpdated && onDocumentUpdated()
+    setShowEditModal(false)
+  }
+
+  const handleShare = async () => {
+    setLoadingShare(true)
+    try {
+      const shareData = await generateShareLink(documento.id)
+      if (shareData && shareData.shareUrl) {
+        setShareUrl(shareData.shareUrl)
+        setShowShareModal(true)
+      }
+    } catch (err) {
+      console.error('Error generando link de compartir:', err)
+    } finally {
+      setLoadingShare(false)
     }
   }
 
@@ -46,7 +90,12 @@ function ModalDocumento({ documento, onClose }) {
           </div>
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-indigo-700 mb-2">{documento.title}</h2>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-sm text-gray-600 flex-wrap">
+              {documento.course && (
+                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
+                  {documento.course}
+                </span>
+              )}
               <span className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-medium">
                 {documento.category}
               </span>
@@ -94,7 +143,13 @@ function ModalDocumento({ documento, onClose }) {
           </div>
         )}
 
-        <div className="flex gap-3 justify-end">
+        {deleteError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {deleteError}
+          </div>
+        )}
+
+        <div className="flex gap-3 justify-end flex-wrap">
           <motion.button
             onClick={onClose}
             className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
@@ -102,6 +157,34 @@ function ModalDocumento({ documento, onClose }) {
             whileTap={{ scale: 0.95 }}
           >
             Cerrar
+          </motion.button>
+          <motion.button
+            onClick={handleShare}
+            disabled={loadingShare}
+            className="px-4 py-2 text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-all flex items-center gap-2 disabled:opacity-50"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Share2 className="w-4 h-4" />
+            {loadingShare ? 'Cargando...' : 'Compartir'}
+          </motion.button>
+          <motion.button
+            onClick={handleEdit}
+            className="px-4 py-2 text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-all flex items-center gap-2"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Edit className="w-4 h-4" />
+            Editar
+          </motion.button>
+          <motion.button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="px-4 py-2 text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-all flex items-center gap-2"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Trash2 className="w-4 h-4" />
+            Eliminar
           </motion.button>
           <motion.button
             onClick={handleDownload}
@@ -114,6 +197,46 @@ function ModalDocumento({ documento, onClose }) {
           </motion.button>
         </div>
       </motion.div>
+
+      {showEditModal && (
+        <EditDocumentModal
+          documento={documento}
+          onClose={() => setShowEditModal(false)}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => {
+          setShowDeleteConfirm(false)
+          setDeleteError('')
+        }}
+        onConfirm={async () => {
+          const success = await handleDelete()
+          // Retornar false si falla para que el diálogo no se cierre
+          return success
+        }}
+        title="Eliminar documento"
+        message={`¿Estás seguro de que quieres eliminar "${documento.title}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        type="danger"
+      />
+
+      {showShareModal && (
+        <ShareQRModal
+          documentId={documento.id}
+          shareUrl={shareUrl}
+          onClose={() => {
+            setShowShareModal(false)
+            setShareUrl('')
+          }}
+          onShareWithFriends={() => {
+            // Opcional: recargar documentos o mostrar notificación
+          }}
+        />
+      )}
     </motion.div>
   )
 }

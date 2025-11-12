@@ -27,7 +27,6 @@ class DocumentController {
   // Subir nuevo documento
   static async uploadDocument(req, res, next) {
     try {
-
       if (!req.file) {
         return res.status(400).json({
           success: false,
@@ -36,14 +35,23 @@ class DocumentController {
       }
 
       const userId = req.user.userId;
-      const { title, description } = req.body;
+      const { title, description, course } = req.body;
       const category = DocumentController.mapCategoryToModel(req.body.category);
+
+      // Validar que course esté presente
+      if (!course || !course.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'El curso es obligatorio'
+        });
+      }
 
       const documentData = {
         userId,
         title,
         description: description || '',
         category,
+        course: course.trim(),
         fileName: req.file.originalname,
         filePath: req.file.path,
         fileType: req.file.mimetype,
@@ -226,11 +234,12 @@ class DocumentController {
   // Actualizar documento
   static async updateDocument(req, res, next) {
     try {
-
       const { id } = req.params;
       const userId = req.user.userId;
-      const { title, description } = req.body;
-      const category = req.body.category ? DocumentController.mapCategoryToModel(req.body.category) : undefined;
+      const { title, description, course } = req.body;
+      const category = req.body.category 
+        ? DocumentController.mapCategoryToModel(req.body.category) 
+        : undefined;
 
       const document = await Document.findById(id);
       if (!document) {
@@ -240,7 +249,7 @@ class DocumentController {
         });
       }
 
-      if (document.userId.toString() !== userId) {
+      if (document.userId.toString() !== userId.toString()) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para actualizar este documento'
@@ -251,12 +260,37 @@ class DocumentController {
       if (title) updateData.title = title;
       if (description !== undefined) updateData.description = description;
       if (category) updateData.category = category;
+      if (course !== undefined) updateData.course = course;
 
       const updatedDocument = await Document.findByIdAndUpdate(
         id,
         updateData,
         { new: true, runValidators: true }
       ).populate('author', 'name career profilePicture');
+
+      // Registrar en auditoría
+      const changes = [];
+      if (title && title !== document.title) {
+        changes.push(`Título: "${document.title}" → "${title}"`);
+      }
+      if (description !== undefined && description !== document.description) {
+        changes.push(`Descripción actualizada`);
+      }
+      if (category && category !== document.category) {
+        changes.push(`Categoría: "${document.category}" → "${category}"`);
+      }
+      if (course !== undefined && course !== document.course) {
+        changes.push(`Curso: "${document.course}" → "${course}"`);
+      }
+
+      await AuditLog.createLog({
+        userId: userId, // El propietario del documento
+        actorId: userId, // Quien realizó la acción
+        documentId: document._id,
+        action: 'update',
+        description: `Documento "${updatedDocument.title}" actualizado exitosamente`,
+        comment: changes.length > 0 ? changes.join(', ') : 'Sin cambios específicos'
+      });
 
       res.json({
         success: true,
@@ -286,7 +320,11 @@ class DocumentController {
         });
       }
 
-      if (document.userId.toString() !== userId) {
+      // Comparar ObjectIds correctamente
+      const documentUserId = document.userId.toString();
+      const requestUserId = userId.toString();
+      
+      if (documentUserId !== requestUserId) {
         return res.status(403).json({
           success: false,
           message: 'No tienes permisos para eliminar este documento'
@@ -354,6 +392,198 @@ class DocumentController {
             averageDownloads: 0,
             categories: []
           }
+        }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Generar o obtener link de compartir
+  static async generateShareLink(req, res, next) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.userId;
+
+      let document = await Document.findById(id);
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Documento no encontrado'
+        });
+      }
+
+      // Verificar que el usuario es el propietario
+      if (document.userId.toString() !== userId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para compartir este documento'
+        });
+      }
+
+      // Generar token si no existe
+      if (!document.shareToken) {
+        await document.generateShareToken();
+        // Recargar el documento desde la base de datos para obtener el token actualizado
+        document = await Document.findById(id).populate('author', 'name career profilePicture');
+      } else {
+        // Si ya tiene token, solo poblar el autor
+        await document.populate('author', 'name career profilePicture');
+      }
+
+      // Construir la URL del frontend
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const shareUrl = `${frontendUrl}/documento/${document.shareToken}`;
+
+      res.json({
+        success: true,
+        data: {
+          shareToken: document.shareToken,
+          shareUrl: shareUrl,
+          document: document
+        }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Obtener documento por token de compartir (público, sin autenticación)
+  static async getDocumentByToken(req, res, next) {
+    try {
+      const { token } = req.params;
+
+      const document = await Document.findByShareToken(token);
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Documento no encontrado o link inválido'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          document: document
+        }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Descargar documento por token (público, sin autenticación)
+  static async downloadByToken(req, res, next) {
+    try {
+      const { token } = req.params;
+
+      const document = await Document.findByShareToken(token);
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Documento no encontrado o link inválido'
+        });
+      }
+
+      try {
+        await fs.access(document.filePath);
+      } catch (error) {
+        return res.status(404).json({
+          success: false,
+          message: 'Archivo no encontrado'
+        });
+      }
+
+      await document.incrementDownloads();
+
+      res.download(document.filePath, document.fileName);
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Compartir documento con amigos específicos
+  static async shareWithFriends(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { friendIds, message } = req.body;
+      const userId = req.user.userId;
+
+      if (!friendIds || !Array.isArray(friendIds) || friendIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Debes especificar al menos un amigo'
+        });
+      }
+
+      const document = await Document.findById(id);
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Documento no encontrado'
+        });
+      }
+
+      // Verificar que el usuario es el propietario
+      if (document.userId.toString() !== userId.toString()) {
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para compartir este documento'
+        });
+      }
+
+      // Verificar que los usuarios son amigos
+      const Friendship = require('../models/Friendship');
+      const User = require('../models/User');
+
+      const friends = await Promise.all(
+        friendIds.map(async (friendId) => {
+          const areFriends = await Friendship.areFriends(userId, friendId);
+          if (!areFriends) {
+            return null;
+          }
+          return await User.findById(friendId).select('name email');
+        })
+      );
+
+      const validFriends = friends.filter(f => f !== null);
+      if (validFriends.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Debes compartir con amigos válidos'
+        });
+      }
+
+      // Generar token si no existe
+      if (!document.shareToken) {
+        await document.generateShareToken();
+      }
+
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const shareUrl = `${frontendUrl}/documento/${document.shareToken}`;
+
+      // Registrar en auditoría
+      await AuditLog.createLog({
+        userId: userId,
+        actorId: userId,
+        documentId: document._id,
+        action: 'share',
+        description: `Documento "${document.title}" compartido con ${validFriends.length} amigo(s)`,
+        comment: `Amigos: ${validFriends.map(f => f.name).join(', ')}`
+      });
+
+      res.json({
+        success: true,
+        message: `Documento compartido con ${validFriends.length} amigo(s)`,
+        data: {
+          shareUrl: shareUrl,
+          shareToken: document.shareToken,
+          friends: validFriends,
+          message: message || ''
         }
       });
 

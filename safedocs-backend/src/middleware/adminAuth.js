@@ -66,7 +66,9 @@ const requireSuperAdmin = async (req, res, next) => {
       });
     }
 
-    if (!req.user.isSuperAdmin()) {
+    // Verificar que el usuario es super admin
+    const user = await User.findById(req.user.userId);
+    if (!user || user.role !== 'super_admin') {
       return res.status(403).json({
         success: false,
         message: 'Acceso denegado. Se requieren permisos de super administrador'

@@ -1,55 +1,175 @@
 // src/components/Sidebar.jsx
-// Barra lateral fija para navegación principal. Incluye acceso rápido a
-// "Mis Documentos", scroll al formulario de subida y toggle de modo nocturno.
-import React from 'react'
-import { Upload, LogOut, LayoutGrid, Moon } from 'lucide-react'
+// Barra lateral fija para navegación principal. Responsive con drawer en móviles.
+// Incluye acceso rápido a "Mis Documentos", scroll al formulario de subida y toggle de modo nocturno.
+import React, { useState, useEffect } from 'react'
+import { Upload, LogOut, LayoutGrid, Moon, X, Menu } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
+import { motion, AnimatePresence } from 'framer-motion'
 
 function Sidebar({ cambiarVista, onGoToUpload, onGoToDocuments }) {
   const { dark, setDark } = useTheme()
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Detectar si estamos en móvil
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+      if (window.innerWidth >= 768) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const goDocuments = () => {
-    if (onGoToDocuments) onGoToDocuments()
-    if (cambiarVista) cambiarVista('dashboard')
+    // Primero cambiar la vista si no estamos en dashboard
+    if (cambiarVista) {
+      cambiarVista('dashboard')
+    }
+    
+    // Luego llamar a la función después de un delay para asegurar que el Dashboard se monte
+    setTimeout(() => {
+      if (onGoToDocuments) {
+        onGoToDocuments()
+      }
+    }, 200)
+    
+    setIsMobileMenuOpen(false)
   }
 
-  return (
-    <aside className="fixed inset-y-0 left-0 w-52 bg-indigo-700 text-white flex flex-col shadow-lg z-40">
-      <div className="px-4 py-4 font-semibold tracking-wide">SafeDocs UNAB</div>
+  const handleUpload = () => {
+    // Cerrar el menú móvil primero
+    setIsMobileMenuOpen(false)
+    
+    // Primero cambiar la vista si no estamos en dashboard
+    if (cambiarVista) {
+      cambiarVista('dashboard')
+    }
+    
+    // Luego hacer scroll después de un delay más largo para asegurar que el Dashboard se monte
+    setTimeout(() => {
+      if (onGoToUpload) {
+        onGoToUpload()
+      }
+    }, 400)
+  }
+
+  const handleLogout = () => {
+    if (cambiarVista) cambiarVista('inicio')
+    setIsMobileMenuOpen(false)
+  }
+
+  const sidebarContent = (
+    <>
+      <div className="px-4 py-4 font-semibold tracking-wide text-white">
+        <div className="flex items-center justify-between">
+          <span>SafeDocs UNAB</span>
+          {isMobile && (
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-1 rounded hover:bg-indigo-600 transition-colors"
+              aria-label="Cerrar menú"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+      </div>
+      
       <nav className="flex-1 px-2 py-2 space-y-1 text-indigo-50">
         <button
           onClick={goDocuments}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-indigo-600 text-left"
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-indigo-600 active:bg-indigo-500 text-left transition-all duration-200 touch-manipulation min-h-[44px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-700"
+          aria-label="Ver mis documentos"
         >
-          <LayoutGrid className="w-4 h-4" />
-          <span className="text-sm">Mis Documentos</span>
+          <LayoutGrid className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm font-medium">Mis Documentos</span>
         </button>
+        
         <button
-          onClick={() => {
-            if (onGoToUpload) onGoToUpload()
-          }}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-indigo-600 text-left"
+          onClick={handleUpload}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-indigo-600 active:bg-indigo-500 text-left transition-all duration-200 touch-manipulation min-h-[44px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-700"
+          aria-label="Subir documento"
         >
-          <Upload className="w-4 h-4" />
-          <span className="text-sm">Subir Documento</span>
+          <Upload className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm font-medium">Subir Documento</span>
         </button>
+        
         <button
           onClick={() => setDark(!dark)}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded hover:bg-indigo-600 text-left"
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-indigo-600 active:bg-indigo-500 text-left transition-all duration-200 touch-manipulation min-h-[44px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-700"
+          aria-label={`Cambiar a modo ${dark ? 'claro' : 'nocturno'}`}
         >
-          <Moon className="w-4 h-4" />
-          <span className="text-sm">{dark ? 'Modo claro' : 'Modo nocturno'}</span>
+          <Moon className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm font-medium">{dark ? 'Modo claro' : 'Modo nocturno'}</span>
         </button>
       </nav>
+      
       <div className="px-2 py-3 border-t border-indigo-500/40">
         <button
-          onClick={() => cambiarVista && cambiarVista('inicio')}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded text-red-200 border border-red-300 hover:bg-red-50/10 hover:text-white text-left"
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-red-200 border border-red-300/50 hover:bg-red-50/10 hover:text-white active:bg-red-50/20 text-left transition-all duration-200 touch-manipulation min-h-[44px] focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-indigo-700"
+          aria-label="Cerrar sesión"
         >
-          <LogOut className="w-4 h-4" />
-          <span className="text-sm">Cerrar sesión</span>
+          <LogOut className="w-5 h-5 flex-shrink-0" />
+          <span className="text-sm font-medium">Cerrar sesión</span>
         </button>
       </div>
+    </>
+  )
+
+  // Versión móvil: drawer lateral
+  if (isMobile) {
+    return (
+      <>
+        {/* Botón hamburguesa para abrir menú */}
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="fixed top-4 left-4 z-50 p-3 rounded-lg bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 active:bg-indigo-800 transition-all duration-200 touch-manipulation min-h-[44px] min-w-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2"
+          aria-label="Abrir menú"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+
+        {/* Overlay oscuro */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 bg-black/50 z-40"
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-hidden="true"
+              />
+              
+              {/* Sidebar drawer */}
+              <motion.aside
+                initial={{ x: -280 }}
+                animate={{ x: 0 }}
+                exit={{ x: -280 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed inset-y-0 left-0 w-[280px] bg-indigo-700 text-white flex flex-col shadow-2xl z-50"
+              >
+                {sidebarContent}
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
+      </>
+    )
+  }
+
+  // Versión desktop: sidebar fijo
+  return (
+    <aside className="fixed inset-y-0 left-0 w-52 bg-indigo-700 text-white flex flex-col shadow-lg z-40">
+      {sidebarContent}
     </aside>
   )
 }

@@ -21,7 +21,7 @@ async function createSuperAdmin() {
     // Datos del super administrador
     const superAdminData = {
       name: 'Super Administrador',
-      email: 'admin@safedocs.unab.cl',
+      email: 'admin@unab.cl',
       password: 'Admin123!',
       career: 'Administración del Sistema',
       role: 'super_admin'

@@ -85,7 +85,12 @@ const documentValidations = {
         const allowedEs = ['Apuntes', 'Guías', 'Resumen', 'Otro'];
         return allowed.includes(value) || allowedEs.includes(value);
       })
-      .withMessage('Categoría inválida')
+      .withMessage('Categoría inválida'),
+    
+    body('course')
+      .trim()
+      .isLength({ min: 2, max: 100 })
+      .withMessage('El curso debe tener entre 2 y 100 caracteres')
   ],
 
   update: [
@@ -108,7 +113,13 @@ const documentValidations = {
     body('category')
       .optional()
       .isIn(['academic', 'research', 'project', 'other'])
-      .withMessage('Categoría inválida')
+      .withMessage('Categoría inválida'),
+    
+    body('course')
+      .optional()
+      .trim()
+      .isLength({ min: 2, max: 100 })
+      .withMessage('El curso debe tener entre 2 y 100 caracteres')
   ],
 
   delete: [

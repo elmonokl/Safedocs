@@ -64,9 +64,12 @@ const ConfirmDialog = ({
               {cancelText}
             </button>
             <button
-              onClick={() => {
-                onConfirm()
-                onClose()
+              onClick={async () => {
+                const result = await onConfirm()
+                // Si onConfirm retorna false o una promesa rechazada, no cerrar
+                if (result !== false) {
+                  onClose()
+                }
               }}
               className={`px-4 py-2 text-white rounded-lg transition-colors ${buttonColors[type]}`}
             >

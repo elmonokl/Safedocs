@@ -7,7 +7,11 @@ const router = express.Router();
 
 // Validaciones centralizadas en middleware/validations.js
 
-// Aplicar middleware de autenticación a todas las rutas
+// Rutas públicas (sin autenticación) para documentos compartidos
+router.get('/shared/:token', DocumentController.getDocumentByToken);
+router.get('/shared/:token/download', DocumentController.downloadByToken);
+
+// Aplicar middleware de autenticación al resto de las rutas
 router.use(authenticateToken);
 router.use(updateLastSeen);
 
@@ -23,5 +27,9 @@ router.get('/:id', documentValidations.getById, handleValidationErrors, Document
 router.get('/:id/download', documentValidations.download, handleValidationErrors, DocumentController.downloadDocument);
 router.put('/:id', documentValidations.update, handleValidationErrors, DocumentController.updateDocument);
 router.delete('/:id', documentValidations.delete, handleValidationErrors, DocumentController.deleteDocument);
+
+// Rutas de compartir documentos
+router.post('/:id/share', DocumentController.generateShareLink);
+router.post('/:id/share-friends', DocumentController.shareWithFriends);
 
 module.exports = router; 

@@ -1,11 +1,12 @@
 const User = require('../models/User');
 const Document = require('../models/Document');
+const fs = require('fs').promises;
 // Validaciones ya son manejadas en rutas con handleValidationErrors
 const { VALID_ROLES } = require('../constants');
 
 class AdminController {
   // Obtener estadísticas generales del sistema
-  static async getSystemStats(req, res) {
+  static async getSystemStats(req, res, next) {
     try {
       const userStats = await User.getUserStats();
       const documentStats = await Document.getStats();
@@ -28,7 +29,7 @@ class AdminController {
   }
 
   // Obtener todos los usuarios (con paginación)
-  static async getAllUsers(req, res) {
+  static async getAllUsers(req, res, next) {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
@@ -77,9 +78,8 @@ class AdminController {
   }
 
   // Cambiar rol de usuario
-  static async changeUserRole(req, res) {
+  static async changeUserRole(req, res, next) {
     try {
-
       const { userId } = req.params;
       const { newRole } = req.body;
 
@@ -100,7 +100,9 @@ class AdminController {
         });
       }
 
-      if (targetUser.isSuperAdmin() && !req.user.isSuperAdmin()) {
+      // Verificar que el usuario actual sea super admin si intenta cambiar el rol de otro super admin
+      const currentUser = await User.findById(req.user.userId);
+      if (targetUser.role === 'super_admin' && currentUser.role !== 'super_admin') {
         return res.status(403).json({
           success: false,
           message: 'No puedes cambiar el rol de un super administrador'
@@ -124,7 +126,7 @@ class AdminController {
   }
 
   // Desactivar/activar usuario
-  static async toggleUserStatus(req, res) {
+  static async toggleUserStatus(req, res, next) {
     try {
       const { userId } = req.params;
       const { isActive } = req.body;
@@ -138,7 +140,7 @@ class AdminController {
       }
 
       // No permitir desactivar super admins
-      if (user.isSuperAdmin() && !isActive) {
+      if (user.role === 'super_admin' && !isActive) {
         return res.status(403).json({
           success: false,
           message: 'No puedes desactivar un super administrador'
@@ -161,7 +163,7 @@ class AdminController {
   }
 
   // Obtener documentos reportados o problemáticos
-  static async getReportedDocuments(req, res) {
+  static async getReportedDocuments(req, res, next) {
     try {
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
@@ -195,7 +197,7 @@ class AdminController {
   }
 
   // Eliminar documento como admin
-  static async deleteDocumentAsAdmin(req, res) {
+  static async deleteDocumentAsAdmin(req, res, next) {
     try {
       const { documentId } = req.params;
       const { reason } = req.body;
@@ -206,6 +208,13 @@ class AdminController {
           success: false,
           message: 'Documento no encontrado'
         });
+      }
+
+      // Eliminar archivo físico del sistema
+      try {
+        await fs.unlink(document.filePath);
+      } catch (error) {
+        console.warn('No se pudo eliminar el archivo físico:', error.message);
       }
 
       // Aquí podrías agregar lógica para notificar al usuario

@@ -75,10 +75,31 @@ const requireAdmin = (req, res, next) => {
 // Rate limiter para autenticación
 const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 1000, // máximo 5 intentos
-  message: {
-    success: false,
-    message: 'Demasiados intentos de autenticación. Intenta de nuevo en 15 minutos'
+  max: 5, // máximo 5 intentos
+  message: (req, res) => {
+    // Obtener el tiempo de reset del header si está disponible
+    const resetHeader = res.get('X-RateLimit-Reset');
+    let resetTime;
+    let secondsRemaining;
+    
+    if (resetHeader) {
+      // Si el header es un timestamp en segundos
+      resetTime = parseInt(resetHeader);
+      secondsRemaining = resetTime - Math.floor(Date.now() / 1000);
+    } else {
+      // Fallback: calcular basado en la ventana de tiempo
+      secondsRemaining = 15 * 60; // 15 minutos en segundos
+      resetTime = Math.floor(Date.now() / 1000) + secondsRemaining;
+    }
+    
+    const minutesRemaining = Math.max(1, Math.ceil(secondsRemaining / 60));
+    
+    return {
+      success: false,
+      message: `Demasiados intentos de autenticación. Intenta de nuevo en ${minutesRemaining} ${minutesRemaining === 1 ? 'minuto' : 'minutos'}`,
+      retryAfter: secondsRemaining,
+      resetTime: resetTime
+    };
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -88,12 +109,37 @@ const authRateLimiter = rateLimit({
 const generalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
   max: 100, // máximo 100 requests
-  message: {
-    success: false,
-    message: 'Demasiadas solicitudes. Intenta de nuevo en 15 minutos'
+  message: (req, res) => {
+    // Obtener el tiempo de reset del header si está disponible
+    const resetHeader = res.get('X-RateLimit-Reset');
+    let resetTime;
+    let secondsRemaining;
+    
+    if (resetHeader) {
+      // Si el header es un timestamp en segundos
+      resetTime = parseInt(resetHeader);
+      secondsRemaining = resetTime - Math.floor(Date.now() / 1000);
+    } else {
+      // Fallback: calcular basado en la ventana de tiempo
+      secondsRemaining = 15 * 60; // 15 minutos en segundos
+      resetTime = Math.floor(Date.now() / 1000) + secondsRemaining;
+    }
+    
+    const minutesRemaining = Math.max(1, Math.ceil(secondsRemaining / 60));
+    
+    return {
+      success: false,
+      message: `Demasiadas solicitudes. Intenta de nuevo en ${minutesRemaining} ${minutesRemaining === 1 ? 'minuto' : 'minutos'}`,
+      retryAfter: secondsRemaining,
+      resetTime: resetTime
+    };
   },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Saltar rate limiting en rutas de health check
+    return req.path === '/health' || req.path === '/api/health';
+  }
 });
 
 // Middleware para actualizar último acceso
