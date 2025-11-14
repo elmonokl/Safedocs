@@ -8,7 +8,7 @@ export const useTheme = () => {
   return ctx
 }
 
-const DEFAULT_SIDEBAR = '#4338CA' // indigo-700
+const DEFAULT_SIDEBAR = '#38BDF8' // sky-400 (celeste pastel)
 
 export const ThemeProvider = ({ children }) => {
   const [dark, setDark] = useState(() => localStorage.getItem('sd_dark') === '1')

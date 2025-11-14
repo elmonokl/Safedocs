@@ -58,13 +58,17 @@ const documentSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
+  isOfficial: {
+    type: Boolean,
+    default: false
+  },
   tags: [{
     type: String,
     trim: true
   }],
   shareToken: {
     type: String,
-    unique: true,
+    unique: true, // Esto crea automáticamente un índice único, no necesitamos index() adicional
     sparse: true,
     trim: true
   }
@@ -81,7 +85,8 @@ documentSchema.index({ course: 1 });
 documentSchema.index({ createdAt: -1 });
 documentSchema.index({ downloadsCount: -1 });
 documentSchema.index({ title: 'text', description: 'text' });
-documentSchema.index({ shareToken: 1 });
+// shareToken ya tiene índice único por unique: true, no duplicar
+documentSchema.index({ isOfficial: 1 });
 
 // Virtual para obtener información del autor
 documentSchema.virtual('author', {

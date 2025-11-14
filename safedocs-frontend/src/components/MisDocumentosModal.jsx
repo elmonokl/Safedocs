@@ -10,7 +10,7 @@ import ModalDocumento from './ModalDocumento'
 import ShareQRModal from './ShareQRModal'
 
 function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
-  const { documents, loading, loadDocuments, deleteDocument, generateShareLink } = useDocuments()
+  const { documents, loading, error, loadDocuments, deleteDocument, generateShareLink, getDocumentById } = useDocuments()
   const [selectedDoc, setSelectedDoc] = useState(null)
   const [editingDoc, setEditingDoc] = useState(null)
   const [deletingDoc, setDeletingDoc] = useState(null)
@@ -24,7 +24,8 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
     if (isOpen) {
       loadDocuments()
     }
-  }, [isOpen, loadDocuments])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen])
 
   const handleDelete = async (docId) => {
     setDeleteError('')
@@ -114,8 +115,21 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
               {/* Content */}
               <div className="flex-1 overflow-y-auto">
                 {loading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p className="mt-4 text-sm text-gray-500">Cargando documentos...</p>
+                  </div>
+                ) : error ? (
+                  <div className="px-6 py-12 text-center">
+                    <FileText className="w-12 h-12 mx-auto mb-4 text-red-300" />
+                    <p className="text-red-600 text-sm font-medium mb-2">Error al cargar documentos</p>
+                    <p className="text-gray-500 text-xs mb-4">{error}</p>
+                    <button
+                      onClick={() => loadDocuments()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    >
+                      Reintentar
+                    </button>
                   </div>
                 ) : documents.length === 0 ? (
                   <div className="px-6 py-12 text-center">
@@ -128,7 +142,7 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
                       <div key={doc.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
-                            <h4 className="text-sm font-medium text-indigo-700 truncate">{doc.title}</h4>
+                            <h4 className="text-sm font-medium text-blue-700 truncate">{doc.title}</h4>
                             <p className="text-xs text-gray-500 mt-1">
                               {doc.course && `Curso: ${doc.course} | `}
                               Categoría: {doc.category} | Subido: {new Date(doc.date).toLocaleDateString()}
@@ -146,7 +160,7 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
                             </button>
                             <button
                               onClick={() => setEditingDoc(doc)}
-                              className="inline-flex items-center justify-center w-9 h-9 text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 rounded transition-colors touch-manipulation"
+                              className="inline-flex items-center justify-center w-9 h-9 text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded transition-colors touch-manipulation"
                               title="Editar documento"
                               aria-label="Editar documento"
                             >
@@ -161,8 +175,17 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
                               <Trash2 className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => setSelectedDoc(doc)}
-                              className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-sm bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded transition-colors touch-manipulation"
+                              onClick={async () => {
+                                // Obtener el documento completo para registrar visualización
+                                const fullDoc = await getDocumentById(doc.id)
+                                if (fullDoc) {
+                                  setSelectedDoc(fullDoc)
+                                } else {
+                                  // Si falla, usar el documento de la lista
+                                  setSelectedDoc(doc)
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded transition-colors touch-manipulation"
                             >
                               Ver <ChevronRight className="w-4 h-4" />
                             </button>

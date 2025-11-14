@@ -61,15 +61,42 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Middleware para verificar rol de administrador
-const requireAdmin = (req, res, next) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      message: 'Acceso denegado. Se requieren permisos de administrador'
-    });
+// Middleware de autenticación opcional (no falla si no hay token)
+const optionalAuthenticateToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+      // Si no hay token, continuar sin autenticación
+      req.user = null;
+      return next();
+    }
+
+    // Verificar token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Verificar que el usuario existe y está activo
+    const user = await User.findById(decoded.userId);
+    if (!user || !user.isActive) {
+      // Si el usuario no existe o está inactivo, continuar sin autenticación
+      req.user = null;
+      return next();
+    }
+
+    // Agregar información del usuario al request
+    req.user = {
+      userId: user._id,
+      email: user.email,
+      role: user.role
+    };
+
+    next();
+  } catch (error) {
+    // Si hay cualquier error, continuar sin autenticación (para rutas públicas)
+    req.user = null;
+    next();
   }
-  next();
 };
 
 // Rate limiter para autenticación
@@ -160,7 +187,7 @@ const updateLastSeen = async (req, res, next) => {
 
 module.exports = {
   authenticateToken,
-  requireAdmin,
+  optionalAuthenticateToken,
   authRateLimiter,
   generalRateLimiter,
   updateLastSeen

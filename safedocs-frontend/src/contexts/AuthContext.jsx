@@ -76,9 +76,12 @@ export const AuthProvider = ({ children }) => {
     setLoading(true)
     
     try {
+      // Remover confirmPassword del objeto antes de enviarlo al backend
+      const { confirmPassword, ...dataToSend } = userData
+      
       const resp = await apiFetch('/api/auth/register', {
         method: 'POST',
-        body: userData
+        body: dataToSend
       })
       const token = resp?.data?.token
       const u = resp?.data?.user
@@ -88,7 +91,7 @@ export const AuthProvider = ({ children }) => {
       setUser(u)
       return true
     } catch (err) {
-      setError(err.message)
+      setError(err.message || 'Error en el registro')
       return false
     } finally {
       setLoading(false)
@@ -125,6 +128,30 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  // Eliminar cuenta de usuario
+  const deleteAccount = async (confirmation) => {
+    setError('')
+    setLoading(true)
+    
+    try {
+      const resp = await apiFetch('/api/auth/account', {
+        method: 'DELETE',
+        body: { confirmation }
+      })
+      if (!resp?.success) throw new Error(resp?.message || 'No se pudo eliminar la cuenta')
+      // Limpiar datos locales después de eliminar la cuenta
+      setUser(null)
+      localStorage.removeItem('safedocs_user')
+      localStorage.removeItem('token')
+      return true
+    } catch (err) {
+      setError(err.message || 'No se pudo eliminar la cuenta')
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const value = {
     user,
     loading,
@@ -133,6 +160,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateProfile,
+    deleteAccount,
     clearError: () => setError('')
   }
 

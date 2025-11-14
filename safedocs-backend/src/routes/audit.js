@@ -5,6 +5,7 @@ const { authenticateToken } = require('../middleware/auth');
 
 // Rutas de auditoría
 router.get('/', authenticateToken, AuditController.getMyAuditLogs);
+router.get('/views', authenticateToken, AuditController.getDocumentViews);
 router.get('/all', AuditController.getAllAuditLogs);
 router.get('/stats', AuditController.getAuditStats);
 

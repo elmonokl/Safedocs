@@ -14,14 +14,13 @@ import VistaProfesor from './components/VistaProfesor'
 import VistaAdministrador from './components/VistaAdministrador'
 import VistaAuditoria from './components/VistaAuditoria'
 import VistaVistos from './components/VistaVistos'
+import VistaDocumentosOficiales from './components/VistaDocumentosOficiales'
+import VistaDocumentosCompartidos from './components/VistaDocumentosCompartidos'
+import SubirDocumentoOficial from './components/SubirDocumentoOficial'
 import Toast from './components/Toast'
 import ConfirmDialog from './components/ConfirmDialog'
 import LoadingSpinner from './components/LoadingSpinner'
 
-/**
- * App Principal
- * Maneja la navegación y estado global
- */
 function AppContent() {
   const { user, loading } = useAuth()
   const [vista, setVista] = useState('inicio')
@@ -55,7 +54,7 @@ function AppContent() {
   return (
     <ThemeProvider>
       <DocumentProvider>
-        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-100 dark:from-gray-900 dark:via-gray-950 dark:to-black">
+        <div className="min-h-screen bg-gray-100 dark:from-gray-900 dark:via-gray-950 dark:to-black">
           {vista === 'inicio' && <Hero cambiarVista={setVista} />}
           {vista === 'login' && <Login cambiarVista={setVista} showToast={showToast} />}
           {vista === 'registro' && <Registro cambiarVista={setVista} showToast={showToast} />}
@@ -75,6 +74,9 @@ function AppContent() {
           {vista === 'admin' && <PanelAdmin cambiarVista={setVista} showToast={showToast} showConfirmDialog={showConfirmDialog} />}
           {vista === 'auditoria' && <VistaAuditoria cambiarVista={setVista} />}
           {vista === 'vistos' && <VistaVistos cambiarVista={setVista} />}
+          {vista === 'documentos-oficiales' && <VistaDocumentosOficiales cambiarVista={setVista} />}
+          {vista === 'documentos-compartidos' && <VistaDocumentosCompartidos cambiarVista={setVista} />}
+          {vista === 'subir-oficial' && <SubirDocumentoOficial cambiarVista={setVista} showToast={showToast} />}
 
           {/* Toast notifications */}
           {toast && (

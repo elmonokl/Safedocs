@@ -1,9 +1,5 @@
 const { body, param, query, validationResult } = require('express-validator');
 
-/**
- * Validaciones de entrada
- * Registros de validación para todos los endpoints de la API
- */
 const authValidations = {
   register: [
     body('name')
@@ -23,6 +19,7 @@ const authValidations = {
       .withMessage('La contraseña debe tener al menos 6 caracteres'),
     
     body('career')
+      .optional()
       .trim()
       .isLength({ min: 2, max: 100 })
       .withMessage('La carrera debe tener entre 2 y 100 caracteres')
@@ -63,6 +60,12 @@ const authValidations = {
       .optional()
       .isLength({ min: 6 })
       .withMessage('La nueva contraseña debe tener al menos 6 caracteres')
+  ],
+
+  deleteAccount: [
+    body('confirmation')
+      .equals('ELIMINAR')
+      .withMessage('Debes escribir "ELIMINAR" en mayúsculas para confirmar la eliminación')
   ]
 };
 
@@ -82,7 +85,7 @@ const documentValidations = {
     body('category')
       .custom((value) => {
         const allowed = ['academic', 'research', 'project', 'other'];
-        const allowedEs = ['Apuntes', 'Guías', 'Resumen', 'Otro'];
+        const allowedEs = ['Apuntes', 'Guías', 'Resumen', 'Resúmenes', 'Pruebas', 'Otro', 'Otros'];
         return allowed.includes(value) || allowedEs.includes(value);
       })
       .withMessage('Categoría inválida'),
@@ -207,6 +210,36 @@ const friendsValidations = {
       .optional()
       .isInt({ min: 1, max: 50 })
       .withMessage('Límite debe ser entre 1 y 50')
+  ],
+
+  shareWithFriends: [
+    param('id')
+      .isMongoId()
+      .withMessage('ID de documento inválido'),
+    
+    body('friendIds')
+      .isArray({ min: 1 })
+      .withMessage('Debes especificar al menos un amigo'),
+    
+    body('friendIds.*')
+      .custom((value) => {
+        // Validar que sea un string y un MongoId válido
+        if (typeof value !== 'string') {
+          throw new Error('Cada ID de amigo debe ser una cadena de texto');
+        }
+        const mongoose = require('mongoose');
+        if (!mongoose.Types.ObjectId.isValid(value)) {
+          throw new Error(`ID de amigo inválido: ${value}`);
+        }
+        return true;
+      })
+      .withMessage('Cada ID de amigo debe ser un MongoId válido'),
+    
+    body('message')
+      .optional()
+      .trim()
+      .isLength({ max: 500 })
+      .withMessage('El mensaje no puede exceder 500 caracteres')
   ]
 };
 
@@ -244,13 +277,17 @@ const userValidations = {
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('Errores de validación:', errors.array());
+    console.log('Body recibido:', JSON.stringify(req.body, null, 2));
+    console.log('Params recibidos:', JSON.stringify(req.params, null, 2));
     return res.status(400).json({
       success: false,
       message: 'Datos de entrada inválidos',
       errors: errors.array().map(error => ({
-        field: error.path,
+        field: error.path || error.param,
         message: error.msg,
-        value: error.value
+        value: error.value,
+        location: error.location
       }))
     });
   }

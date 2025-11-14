@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: [true, 'El email es obligatorio'],
-    unique: true,
+    unique: true, // Esto crea automáticamente un índice único, no necesitamos index() adicional
     lowercase: true,
     trim: true,
     match: [/@unab\.cl$/, 'Debes usar un correo institucional (@unab.cl)']
@@ -64,7 +64,7 @@ const userSchema = new mongoose.Schema({
 });
 
 // Índices para optimizar consultas
-userSchema.index({ email: 1 });
+// email ya tiene índice único por unique: true, no duplicar
 userSchema.index({ isActive: 1 });
 userSchema.index({ isOnline: 1 });
 userSchema.index({ name: 1 });

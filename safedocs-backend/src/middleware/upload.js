@@ -49,7 +49,7 @@ function createUpload({ destination, maxFileSizeBytes, allowedExtensions, allowe
 // Uploader para documentos
 const documentUpload = createUpload({
   destination: path.join(__dirname, '../../uploads/documents'),
-  maxFileSizeBytes: parseInt(process.env.MAX_FILE_SIZE, 10) || 10 * 1024 * 1024,
+  maxFileSizeBytes: parseInt(process.env.MAX_FILE_SIZE, 10) || 50 * 1024 * 1024, // 50MB por defecto
   allowedExtensions: (process.env.ALLOWED_FILE_TYPES || 'pdf,doc,docx,txt,ppt,pptx').split(','),
   allowedMimeTypes: [],
   filenamePrefix: 'document'

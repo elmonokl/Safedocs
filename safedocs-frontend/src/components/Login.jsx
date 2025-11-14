@@ -26,16 +26,16 @@ function Login({ cambiarVista, showToast }) {
 
   return (
     <motion.div
-      className="flex flex-col items-center justify-center py-20 px-4 min-h-[70vh] bg-gradient-to-br from-indigo-100 via-white to-indigo-200"
+      className="flex flex-col items-center justify-center py-20 px-4 min-h-[70vh] bg-gradient-to-br from-blue-100 via-white to-red-50"
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -30 }}
       transition={{ duration: 0.6 }}
     >
-      <h2 className="text-3xl font-bold text-indigo-800 mb-6 drop-shadow">Iniciar Sesión</h2>
+      <h2 className="text-3xl font-bold text-blue-800 mb-6 drop-shadow">Iniciar Sesión</h2>
       <motion.form
         onSubmit={manejarLogin}
-        className="bg-white/60 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-4 border border-indigo-100"
+        className="bg-white/60 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-md space-y-4 border border-blue-100"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.5 }}
@@ -49,7 +49,7 @@ function Login({ cambiarVista, showToast }) {
             type="email"
             value={correo}
             onChange={(e) => setCorreo(e.target.value)}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-sm transition"
+            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm transition"
             placeholder="correo@unab.cl"
             required
             aria-describedby="email-help"
@@ -92,7 +92,7 @@ function Login({ cambiarVista, showToast }) {
         <motion.button
           type="submit"
           disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2 rounded-xl shadow-lg hover:bg-indigo-700 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-blue-600 text-white py-2 rounded-xl shadow-lg hover:bg-blue-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           whileHover={{ scale: loading ? 1 : 1.04 }}
           whileTap={{ scale: loading ? 1 : 0.97 }}
         >
@@ -111,7 +111,7 @@ function Login({ cambiarVista, showToast }) {
         ¿No tienes cuenta?{' '}
         <button 
           onClick={() => cambiarVista('registro')} 
-          className="text-indigo-600 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded"
+          className="text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-400 rounded"
         >
           Regístrate
         </button>

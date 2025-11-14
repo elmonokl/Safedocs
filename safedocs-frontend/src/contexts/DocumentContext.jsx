@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { apiFetch } from '../utils/api'
 import { useAuth } from './AuthContext'
 
@@ -49,15 +49,7 @@ export const DocumentProvider = ({ children }) => {
   const [filterCategory, setFilterCategory] = useState('')
   const [sortBy, setSortBy] = useState('date')
 
-  useEffect(() => {
-    if (user) {
-      loadDocuments()
-    } else {
-      setDocuments([])
-    }
-  }, [user])
-
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     if (!user) {
       setDocuments([])
       return
@@ -70,14 +62,26 @@ export const DocumentProvider = ({ children }) => {
       if (resp?.success && resp?.data?.documents) {
         const mapped = resp.data.documents.map(doc => mapDocument(doc, user))
         setDocuments(mapped)
+      } else {
+        // Si no hay documentos, establecer array vacío
+        setDocuments([])
       }
     } catch (err) {
+      console.error('Error al cargar documentos:', err)
       setError('Error al cargar documentos: ' + err.message)
       setDocuments([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      loadDocuments()
+    } else {
+      setDocuments([])
+    }
+  }, [user, loadDocuments])
 
   const uploadDocument = async (documentData) => {
     if (!user) {
@@ -121,7 +125,16 @@ export const DocumentProvider = ({ children }) => {
         throw new Error(resp?.message || 'Error al subir documento')
       }
     } catch (err) {
-      setError(err.message || 'Error al subir documento')
+      console.error('Error detallado al subir documento:', err)
+      const errorMessage = err.message || err.statusText || 'Error al subir documento'
+      setError(errorMessage)
+      
+      // Si es un error de autenticación, limpiar sesión
+      if (err.status === 401 || err.status === 403) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('safedocs_user')
+      }
+      
       return false
     } finally {
       setLoading(false)
@@ -179,6 +192,31 @@ export const DocumentProvider = ({ children }) => {
       setError(err.message || 'Error al eliminar documento')
       console.error('Error al eliminar documento:', err)
       return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getDocumentById = async (documentId) => {
+    if (!user) {
+      setError('Debes estar autenticado para ver documentos')
+      return null
+    }
+
+    setLoading(true)
+    setError('')
+    
+    try {
+      const resp = await apiFetch(`/api/documents/${documentId}`)
+      if (resp?.success && resp?.data?.document) {
+        // El backend registra automáticamente la visualización
+        return mapDocument(resp.data.document, user)
+      } else {
+        throw new Error('Documento no encontrado')
+      }
+    } catch (err) {
+      setError(err.message || 'Error al obtener el documento')
+      return null
     } finally {
       setLoading(false)
     }
@@ -308,13 +346,38 @@ export const DocumentProvider = ({ children }) => {
       return false
     }
 
+    if (!documentId) {
+      setError('ID de documento no válido')
+      return false
+    }
+
+    if (!friendIds || !Array.isArray(friendIds) || friendIds.length === 0) {
+      setError('Debes seleccionar al menos un amigo')
+      return false
+    }
+
     setLoading(true)
     setError('')
     
     try {
+      // Asegurar que los IDs sean strings válidos
+      const normalizedFriendIds = friendIds
+        .filter(id => id != null && id !== undefined && id !== '')
+        .map(id => String(id).trim())
+        .filter(id => id && id !== 'undefined' && id !== 'null' && id !== '')
+      
+      console.log('Enviando friendIds al backend:', normalizedFriendIds, 'Longitud:', normalizedFriendIds.length)
+      
+      if (normalizedFriendIds.length === 0) {
+        throw new Error('No hay IDs de amigos válidos para compartir')
+      }
+      
       const resp = await apiFetch(`/api/documents/${documentId}/share-friends`, {
         method: 'POST',
-        body: { friendIds, message }
+        body: { 
+          friendIds: normalizedFriendIds, 
+          message: message || '' 
+        }
       })
       
       if (resp?.success) {
@@ -323,7 +386,29 @@ export const DocumentProvider = ({ children }) => {
         throw new Error(resp?.message || 'Error al compartir con amigos')
       }
     } catch (err) {
-      setError(err.message || 'Error al compartir con amigos')
+      console.error('Error compartiendo con amigos:', err)
+      console.error('Detalles del error:', {
+        message: err.message,
+        status: err.status,
+        statusText: err.statusText,
+        response: err.response
+      })
+      
+      // Obtener mensaje de error detallado
+      let errorMessage = err.message || err.statusText || 'Error al compartir con amigos'
+      
+      // Si hay errores de validación en la respuesta, mostrarlos
+      if (err.response?.errors && Array.isArray(err.response.errors)) {
+        const validationErrors = err.response.errors.map(e => e.message).join(', ')
+        errorMessage = `Error de validación: ${validationErrors}`
+        console.error('Errores de validación:', err.response.errors)
+      } else if (err.response?.message) {
+        errorMessage = err.response.message
+      }
+      
+      const errorDetails = err.status ? ` (Error ${err.status})` : ''
+      setError(errorMessage + errorDetails)
+      
       return false
     } finally {
       setLoading(false)
@@ -343,6 +428,7 @@ export const DocumentProvider = ({ children }) => {
     uploadDocument,
     updateDocument,
     deleteDocument,
+    getDocumentById,
     downloadDocument,
     loadDocuments,
     generateShareLink,

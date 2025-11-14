@@ -31,4 +31,7 @@ router.post('/reset-password', [
   ...authValidations.updateProfile.filter(v => String(v.builder?.fields?.[0] || v?.fields?.[0]) === 'newPassword')
 ], handleValidationErrors, AuthController.resetPassword);
 
+// Ruta para eliminar cuenta
+router.delete('/account', authenticateToken, authValidations.deleteAccount, handleValidationErrors, AuthController.deleteAccount);
+
 module.exports = router; 

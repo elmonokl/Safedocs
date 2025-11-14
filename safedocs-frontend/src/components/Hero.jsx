@@ -6,7 +6,7 @@ function Hero({ cambiarVista }) {
     <section className="relative flex flex-col items-center justify-center text-center mt-20 px-4 min-h-[60vh] overflow-hidden">
       {/* Fondo gradiente animado */}
       <motion.div
-        className="absolute inset-0 -z-10 bg-gradient-to-br from-indigo-200 via-indigo-400 to-indigo-700 opacity-80 animate-gradient-move"
+        className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-200 via-blue-400 to-red-600 opacity-80 animate-gradient-move"
         initial={{ opacity: 0 }}
         animate={{ opacity: 0.8 }}
         transition={{ duration: 1 }}
@@ -20,7 +20,7 @@ function Hero({ cambiarVista }) {
         Intercambio seguro de documentos académicos
       </motion.h2>
       <motion.p
-        className="text-lg sm:text-xl text-indigo-100 max-w-xl mb-8 drop-shadow"
+        className="text-lg sm:text-xl text-blue-100 max-w-xl mb-8 drop-shadow"
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.8 }}

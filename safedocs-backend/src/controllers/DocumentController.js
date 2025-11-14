@@ -1,17 +1,15 @@
 const Document = require('../models/Document');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
+const Friendship = require('../models/Friendship');
+const SharedDocument = require('../models/SharedDocument');
+const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs').promises;
-// Validaciones ya son manejadas en rutas con handleValidationErrors
 const { documentUpload } = require('../middleware/upload');
 
 const upload = documentUpload;
 
-/**
- * Controlador de Documentos
- * Gestiona CRUD completo de documentos y archivos
- */
 class DocumentController {
   // Mapea categorías del frontend al modelo
   static mapCategoryToModel(category) {
@@ -19,7 +17,10 @@ class DocumentController {
       'Apuntes': 'academic',
       'Guías': 'research',
       'Resumen': 'project',
-      'Otro': 'other'
+      'Resúmenes': 'project', // Aceptar plural también
+      'Pruebas': 'academic', // Mapear Pruebas a academic
+      'Otro': 'other',
+      'Otros': 'other' // Aceptar plural también
     };
     return mapping[category] || category;
   }
@@ -55,7 +56,8 @@ class DocumentController {
         fileName: req.file.originalname,
         filePath: req.file.path,
         fileType: req.file.mimetype,
-        fileSize: req.file.size
+        fileSize: req.file.size,
+        isOfficial: false // Los documentos normales no son oficiales
       };
 
       const newDocument = await Document.create(documentData);
@@ -74,6 +76,116 @@ class DocumentController {
       res.status(201).json({
         success: true,
         message: 'Documento subido exitosamente',
+        data: {
+          document: populatedDocument
+        }
+      });
+
+    } catch (error) {
+      // Rollback: eliminar archivo si falla la BD
+      if (req.file) {
+        try {
+          await fs.unlink(req.file.path);
+        } catch (unlinkError) {
+          // Ignorar error de unlink
+        }
+      }
+      next(error);
+    }
+  }
+
+  // Subir documento oficial (solo profesores)
+  static async uploadOfficialDocument(req, res, next) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'Debes subir un archivo'
+        });
+      }
+
+      const userId = req.user.userId;
+      const userRole = req.user.role;
+
+      // Verificar que el usuario sea profesor
+      if (userRole !== 'professor') {
+        // Eliminar el archivo subido si no es profesor
+        try {
+          await fs.unlink(req.file.path);
+        } catch (unlinkError) {
+          // Ignorar error de unlink
+        }
+        return res.status(403).json({
+          success: false,
+          message: 'Solo los profesores pueden subir documentos oficiales'
+        });
+      }
+
+      // Obtener información del profesor
+      const professor = await User.findById(userId);
+      if (!professor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado'
+        });
+      }
+
+      const { title, description, course } = req.body;
+      const category = DocumentController.mapCategoryToModel(req.body.category || 'academic');
+
+      // Validar que course esté presente
+      if (!course || !course.trim()) {
+        // Eliminar el archivo subido si falta información
+        try {
+          await fs.unlink(req.file.path);
+        } catch (unlinkError) {
+          // Ignorar error de unlink
+        }
+        return res.status(400).json({
+          success: false,
+          message: 'El curso es obligatorio'
+        });
+      }
+
+      const documentData = {
+        userId,
+        title,
+        description: description || '',
+        category,
+        course: course.trim(),
+        fileName: req.file.originalname,
+        filePath: req.file.path,
+        fileType: req.file.mimetype,
+        fileSize: req.file.size,
+        isOfficial: true, // Marcar como documento oficial
+        isPublic: true, // Los documentos oficiales son públicos
+        shareToken: null // Los documentos oficiales no se comparten por token
+      };
+
+      const newDocument = await Document.create(documentData);
+      const populatedDocument = await Document.findById(newDocument._id)
+        .populate('author', 'name career profilePicture');
+
+      await AuditLog.createLog({
+        userId: userId, // El propietario del documento (profesor)
+        actorId: userId, // Quien realizó la acción
+        documentId: newDocument._id,
+        action: 'upload',
+        description: `Documento oficial "${title}" subido por profesor ${professor.name}`,
+        comment: `Curso: ${course.trim()}`
+      });
+
+      // Crear notificaciones para todos los usuarios (sin esperar, en segundo plano)
+      const NotificationController = require('./NotificationController');
+      NotificationController.createOfficialDocumentNotification(newDocument._id, userId)
+        .catch(error => {
+          console.error('Error creando notificaciones de documento oficial:', error);
+          // No fallar la respuesta si las notificaciones fallan
+        });
+
+      res.status(201).json({
+        success: true,
+        message: 'Documento oficial subido exitosamente',
         data: {
           document: populatedDocument
         }
@@ -138,11 +250,16 @@ class DocumentController {
       const { page = 1, limit = 20 } = req.query;
       const skip = (page - 1) * limit;
 
-      const documents = await Document.findByUser(userId)
+      // Excluir documentos oficiales (isOfficial: false o no existe)
+      const query = { userId, $or: [{ isOfficial: false }, { isOfficial: { $exists: false } }] };
+      
+      const documents = await Document.find(query)
+        .populate('author', 'name career profilePicture')
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit));
 
-      const total = await Document.countDocuments({ userId });
+      const total = await Document.countDocuments(query);
 
       res.json({
         success: true,
@@ -158,6 +275,7 @@ class DocumentController {
       });
 
     } catch (error) {
+      console.error('Error en getMyDocuments:', error);
       next(error);
     }
   }
@@ -166,6 +284,8 @@ class DocumentController {
   static async getDocumentById(req, res, next) {
     try {
       const { id } = req.params;
+      const viewerId = req.user?.userId || null;
+      
       const document = await Document.findById(id)
         .populate('author', 'name career profilePicture');
 
@@ -174,6 +294,23 @@ class DocumentController {
           success: false,
           message: 'Documento no encontrado'
         });
+      }
+
+      // Registrar visualización si hay un usuario autenticado y no es el propietario
+      if (viewerId && document.userId.toString() !== viewerId) {
+        try {
+          await AuditLog.createLog({
+            userId: document.userId, // El propietario del documento
+            actorId: viewerId, // Quien vio el documento
+            documentId: document._id,
+            action: 'view',
+            description: `Documento "${document.title}" visualizado`,
+            comment: ''
+          });
+        } catch (auditError) {
+          // No fallar la respuesta si falla el registro de auditoría
+          console.error('Error registrando visualización:', auditError);
+        }
       }
 
       res.json({
@@ -414,6 +551,14 @@ class DocumentController {
         });
       }
 
+      // No permitir compartir documentos oficiales
+      if (document.isOfficial) {
+        return res.status(403).json({
+          success: false,
+          message: 'Los documentos oficiales no se pueden compartir por QR o enlaces. Son públicos para todos los usuarios.'
+        });
+      }
+
       // Verificar que el usuario es el propietario
       if (document.userId.toString() !== userId.toString()) {
         return res.status(403).json({
@@ -454,6 +599,8 @@ class DocumentController {
   static async getDocumentByToken(req, res, next) {
     try {
       const { token } = req.params;
+      // Obtener userId si hay un usuario autenticado (opcional para documentos compartidos)
+      const viewerId = req.user?.userId || null;
 
       const document = await Document.findByShareToken(token);
       if (!document) {
@@ -461,6 +608,23 @@ class DocumentController {
           success: false,
           message: 'Documento no encontrado o link inválido'
         });
+      }
+
+      // Registrar visualización si hay un usuario autenticado y no es el propietario
+      if (viewerId && document.userId.toString() !== viewerId) {
+        try {
+          await AuditLog.createLog({
+            userId: document.userId, // El propietario del documento
+            actorId: viewerId, // Quien vio el documento
+            documentId: document._id,
+            action: 'view',
+            description: `Documento compartido "${document.title}" visualizado`,
+            comment: ''
+          });
+        } catch (auditError) {
+          // No fallar la respuesta si falla el registro de auditoría
+          console.error('Error registrando visualización de documento compartido:', auditError);
+        }
       }
 
       res.json({
@@ -479,6 +643,8 @@ class DocumentController {
   static async downloadByToken(req, res, next) {
     try {
       const { token } = req.params;
+      // Obtener userId si hay un usuario autenticado (opcional para documentos compartidos)
+      const downloaderId = req.user?.userId || null;
 
       const document = await Document.findByShareToken(token);
       if (!document) {
@@ -499,6 +665,23 @@ class DocumentController {
 
       await document.incrementDownloads();
 
+      // Registrar descarga si hay un usuario autenticado y no es el propietario
+      if (downloaderId && document.userId.toString() !== downloaderId) {
+        try {
+          await AuditLog.createLog({
+            userId: document.userId, // El propietario del documento
+            actorId: downloaderId, // Quien descargó el documento
+            documentId: document._id,
+            action: 'download',
+            description: `Documento compartido "${document.title}" descargado`,
+            comment: `Descarga #${document.downloadsCount + 1}`
+          });
+        } catch (auditError) {
+          // No fallar la respuesta si falla el registro de auditoría
+          console.error('Error registrando descarga de documento compartido:', auditError);
+        }
+      }
+
       res.download(document.filePath, document.fileName);
 
     } catch (error) {
@@ -506,17 +689,209 @@ class DocumentController {
     }
   }
 
-  // Compartir documento con amigos específicos
+  // Obtener todos los documentos oficiales (público)
+  static async getOfficialDocuments(req, res, next) {
+    try {
+      const { page = 1, limit = 50, search, professor } = req.query;
+      const skip = (parseInt(page) - 1) * parseInt(limit);
+      const numericLimit = Math.min(parseInt(limit) || 50, 100);
+      
+      // Construir query para documentos oficiales
+      let query = { isOfficial: true, isPublic: true };
+      
+      // Si hay búsqueda, agregar filtro de texto
+      if (search && typeof search === 'string' && search.trim()) {
+        query.$or = [
+          { title: { $regex: search.trim(), $options: 'i' } },
+          { description: { $regex: search.trim(), $options: 'i' } }
+        ];
+      }
+      
+      // Si hay filtro de profesor, buscar usuarios primero y luego filtrar por userId
+      if (professor && typeof professor === 'string' && professor.trim()) {
+        try {
+          // Buscar profesores que coincidan con el nombre (solo IDs para eficiencia)
+          const professorName = professor.trim();
+          const professorUsers = await User.find({
+            role: 'professor',
+            isActive: true,
+            name: { $regex: professorName, $options: 'i' }
+          }).select('_id').lean();
+          
+          if (professorUsers && Array.isArray(professorUsers) && professorUsers.length > 0) {
+            const professorIds = professorUsers.map(u => u._id).filter(Boolean);
+            if (professorIds.length > 0) {
+              query.userId = { $in: professorIds };
+            } else {
+              // Si no hay IDs válidos, retornar vacío
+              return res.json({
+                success: true,
+                data: {
+                  documents: [],
+                  pagination: {
+                    page: parseInt(page),
+                    limit: numericLimit,
+                    total: 0,
+                    pages: 0
+                  }
+                }
+              });
+            }
+          } else {
+            // Si no hay profesores que coincidan, retornar vacío
+            return res.json({
+              success: true,
+              data: {
+                documents: [],
+                pagination: {
+                  page: parseInt(page),
+                  limit: numericLimit,
+                  total: 0,
+                  pages: 0
+                }
+              }
+            });
+          }
+        } catch (profError) {
+          // Si hay error buscando profesores, continuar sin filtro
+          console.error('Error filtrando por profesor:', profError);
+        }
+      }
+      
+      // Obtener documentos con paginación
+      const [documents, total] = await Promise.all([
+        Document.find(query)
+          .populate('author', 'name career profilePicture')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(numericLimit)
+          .lean(),
+        Document.countDocuments(query)
+      ]);
+      
+      res.json({
+        success: true,
+        data: {
+          documents,
+          pagination: {
+            page: parseInt(page),
+            limit: numericLimit,
+            total,
+            pages: Math.ceil(total / numericLimit)
+          }
+        }
+      });
+      
+    } catch (error) {
+      console.error('Error en getOfficialDocuments:', error);
+      next(error);
+    }
+  }
+
+  // Obtener documento oficial por ID (público, pero registra visualización si hay usuario autenticado)
+  static async getOfficialDocumentById(req, res, next) {
+    try {
+      const { id } = req.params;
+      const viewerId = req.user?.userId || null;
+
+      const document = await Document.findOne({ _id: id, isOfficial: true, isPublic: true })
+        .populate('author', 'name career profilePicture');
+      
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Documento oficial no encontrado'
+        });
+      }
+
+      // Registrar visualización si hay un usuario autenticado y no es el propietario
+      if (viewerId && document.userId.toString() !== viewerId) {
+        try {
+          await AuditLog.createLog({
+            userId: document.userId, // El propietario del documento (profesor)
+            actorId: viewerId, // Quien vio el documento
+            documentId: document._id,
+            action: 'view',
+            description: `Documento oficial "${document.title}" visualizado`,
+            comment: `Curso: ${document.course}`
+          });
+        } catch (auditError) {
+          // No fallar la respuesta si falla el registro de auditoría
+          console.error('Error registrando visualización de documento oficial:', auditError);
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          document: document
+        }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Descargar documento oficial (público, pero registra descarga si hay usuario autenticado)
+  static async downloadOfficialDocument(req, res, next) {
+    try {
+      const { id } = req.params;
+      const downloaderId = req.user?.userId || null;
+
+      const document = await Document.findOne({ _id: id, isOfficial: true, isPublic: true });
+      
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Documento oficial no encontrado'
+        });
+      }
+
+      try {
+        await fs.access(document.filePath);
+      } catch (error) {
+        return res.status(404).json({
+          success: false,
+          message: 'Archivo no encontrado'
+        });
+      }
+
+      await document.incrementDownloads();
+
+      // Registrar descarga si hay un usuario autenticado y no es el propietario
+      if (downloaderId && document.userId.toString() !== downloaderId) {
+        try {
+          await AuditLog.createLog({
+            userId: document.userId, // El propietario del documento (profesor)
+            actorId: downloaderId, // Quien descargó el documento
+            documentId: document._id,
+            action: 'download',
+            description: `Documento oficial "${document.title}" descargado`,
+            comment: `Descarga #${document.downloadsCount + 1} - Curso: ${document.course}`
+          });
+        } catch (auditError) {
+          // No fallar la respuesta si falla el registro de auditoría
+          console.error('Error registrando descarga de documento oficial:', auditError);
+        }
+      }
+
+      res.download(document.filePath, document.fileName);
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async shareWithFriends(req, res, next) {
     try {
       const { id } = req.params;
-      const { friendIds, message } = req.body;
       const userId = req.user.userId;
-
-      if (!friendIds || !Array.isArray(friendIds) || friendIds.length === 0) {
+      
+      if (!id || !mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({
           success: false,
-          message: 'Debes especificar al menos un amigo'
+          message: 'ID de documento inválido'
         });
       }
 
@@ -527,8 +902,14 @@ class DocumentController {
           message: 'Documento no encontrado'
         });
       }
+      
+      if (document.isOfficial) {
+        return res.status(403).json({
+          success: false,
+          message: 'Los documentos oficiales no se pueden compartir con amigos. Son públicos para todos los usuarios.'
+        });
+      }
 
-      // Verificar que el usuario es el propietario
       if (document.userId.toString() !== userId.toString()) {
         return res.status(403).json({
           success: false,
@@ -536,54 +917,216 @@ class DocumentController {
         });
       }
 
-      // Verificar que los usuarios son amigos
-      const Friendship = require('../models/Friendship');
-      const User = require('../models/User');
+      const { friendIds, message } = req.body;
 
-      const friends = await Promise.all(
-        friendIds.map(async (friendId) => {
-          const areFriends = await Friendship.areFriends(userId, friendId);
-          if (!areFriends) {
-            return null;
-          }
-          return await User.findById(friendId).select('name email');
-        })
-      );
-
-      const validFriends = friends.filter(f => f !== null);
-      if (validFriends.length === 0) {
+      if (!friendIds) {
         return res.status(400).json({
           success: false,
-          message: 'Debes compartir con amigos válidos'
+          message: 'Debes especificar al menos un amigo',
+          errors: [{ field: 'friendIds', message: 'El campo friendIds es requerido' }]
         });
       }
 
-      // Generar token si no existe
+      let friendIdsArray = [];
+      if (Array.isArray(friendIds)) {
+        friendIdsArray = friendIds;
+      } else if (typeof friendIds === 'string') {
+        try {
+          const parsed = JSON.parse(friendIds);
+          friendIdsArray = Array.isArray(parsed) ? parsed : [parsed];
+        } catch {
+          friendIdsArray = [friendIds];
+        }
+      } else {
+        friendIdsArray = [friendIds];
+      }
+
+      const validFriendIds = [];
+      const invalidIds = [];
+      
+      for (const id of friendIdsArray) {
+        if (!id || id === null || id === undefined) continue;
+        
+        const idStr = String(id).trim();
+        
+        if (!idStr || idStr === '' || idStr === 'undefined' || idStr === 'null' || idStr === '[object Object]') {
+          invalidIds.push({ id, reason: 'ID vacío o inválido' });
+          continue;
+        }
+        
+        if (!mongoose.Types.ObjectId.isValid(idStr)) {
+          invalidIds.push({ id: idStr, reason: 'Formato de ID inválido (debe ser un MongoId)' });
+          continue;
+        }
+        
+        validFriendIds.push(idStr);
+      }
+
+      if (validFriendIds.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Debes especificar al menos un amigo válido',
+          errors: invalidIds.map(({ id, reason }) => ({ field: 'friendIds', message: `ID ${id}: ${reason}` }))
+        });
+      }
+
+      const userIdObj = new mongoose.Types.ObjectId(userId);
+      const friends = [];
+      const notFriends = [];
+      
+      for (const friendIdStr of validFriendIds) {
+        try {
+          const friendIdObj = new mongoose.Types.ObjectId(friendIdStr);
+          const friendship = await Friendship.areFriends(userIdObj, friendIdObj);
+          
+          if (!friendship) {
+            notFriends.push(friendIdStr);
+            continue;
+          }
+          
+          const friend = await User.findById(friendIdObj).select('name email career profilePicture');
+          if (!friend) continue;
+          
+          friends.push({ 
+            id: friend._id.toString(), 
+            name: friend.name, 
+            email: friend.email 
+          });
+        } catch (error) {
+          console.error(`Error verificando amistad con ${friendIdStr}:`, error);
+          notFriends.push(friendIdStr);
+        }
+      }
+
+      if (friends.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Debes compartir con amigos válidos. Verifica que los usuarios seleccionados sean tus amigos.',
+          errors: notFriends.length > 0 ? [
+            { field: 'friendIds', message: `Los siguientes usuarios no son tus amigos: ${notFriends.join(', ')}` }
+          ] : []
+        });
+      }
+
       if (!document.shareToken) {
         await document.generateShareToken();
+        await document.save();
       }
 
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       const shareUrl = `${frontendUrl}/documento/${document.shareToken}`;
 
-      // Registrar en auditoría
-      await AuditLog.createLog({
-        userId: userId,
-        actorId: userId,
-        documentId: document._id,
-        action: 'share',
-        description: `Documento "${document.title}" compartido con ${validFriends.length} amigo(s)`,
-        comment: `Amigos: ${validFriends.map(f => f.name).join(', ')}`
-      });
+      const sharedDocuments = await Promise.all(
+        friends.map(friend =>
+          SharedDocument.createOrUpdate(
+            document._id,
+            friend.id,
+            userId,
+            message || ''
+          ).catch(error => {
+            console.error(`Error guardando documento compartido para ${friend.id}:`, error);
+            return null;
+          })
+        )
+      );
+
+      const savedDocuments = sharedDocuments.filter(sd => sd !== null);
+
+      try {
+        await AuditLog.createLog({
+          userId: userId,
+          actorId: userId,
+          documentId: document._id,
+          action: 'share',
+          description: `Documento "${document.title}" compartido con ${friends.length} amigo(s)`,
+          comment: `Amigos: ${friends.map(f => f.name).join(', ')}`
+        });
+      } catch (auditError) {
+        console.error('Error registrando en auditoría:', auditError);
+      }
 
       res.json({
         success: true,
-        message: `Documento compartido con ${validFriends.length} amigo(s)`,
+        message: `Documento compartido con ${friends.length} amigo(s)${notFriends.length > 0 ? `. ${notFriends.length} usuario(s) no eran amigos` : ''}`,
         data: {
           shareUrl: shareUrl,
           shareToken: document.shareToken,
-          friends: validFriends,
-          message: message || ''
+          friends: friends,
+          message: message || '',
+          sharedDocuments: savedDocuments.length,
+          warnings: notFriends.length > 0 ? [`Los siguientes usuarios no eran amigos: ${notFriends.join(', ')}`] : []
+        }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getSharedDocuments(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const { limit = 50, skip = 0, unreadOnly = false } = req.query;
+
+      const sharedDocuments = await SharedDocument.getSharedWithUser(userId, {
+        limit: parseInt(limit),
+        skip: parseInt(skip),
+        unreadOnly: unreadOnly === 'true'
+      });
+
+      const unreadCount = await SharedDocument.countUnread(userId);
+
+      // Mapear documentos compartidos
+      const documents = sharedDocuments
+        .filter(sd => sd.documentId) // Filtrar documentos que ya no existen
+        .map(sd => {
+          const doc = sd.documentId.toObject();
+          // Obtener el usuario que compartió (sharedByUserId o sharedBy)
+          const sharedBy = sd.sharedByUserId || sd.sharedBy || null;
+          return {
+            ...doc,
+            sharedBy: sharedBy,
+            sharedAt: sd.createdAt,
+            message: sd.message || '',
+            isRead: sd.isRead || false,
+            readAt: sd.readAt || null
+          };
+        });
+
+      res.json({
+        success: true,
+        data: {
+          documents,
+          unreadCount,
+          total: documents.length
+        }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Marcar documento compartido como leído
+  static async markSharedDocumentAsRead(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const { id } = req.params;
+
+      const sharedDocument = await SharedDocument.markAsRead(id, userId);
+
+      if (!sharedDocument) {
+        return res.status(404).json({
+          success: false,
+          message: 'Documento compartido no encontrado'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Documento marcado como leído',
+        data: {
+          sharedDocument
         }
       });
 

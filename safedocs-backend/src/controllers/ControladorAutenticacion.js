@@ -1,5 +1,11 @@
 const User = require('../models/User');
+const Document = require('../models/Document');
+const Friendship = require('../models/Friendship');
+const FriendRequest = require('../models/FriendRequest');
+const AuditLog = require('../models/AuditLog');
 const jwt = require('jsonwebtoken');
+const fs = require('fs').promises;
+const path = require('path');
 // Validaciones ya son manejadas en rutas con handleValidationErrors
 
 /**
@@ -316,6 +322,89 @@ class AuthController {
       res.json({
         success: true,
         message: 'Contraseña restablecida exitosamente'
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Eliminar cuenta de usuario
+  static async deleteAccount(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const { confirmation } = req.body;
+
+      // Verificar que se proporcionó la confirmación
+      if (!confirmation || confirmation !== 'ELIMINAR') {
+        return res.status(400).json({
+          success: false,
+          message: 'Debes escribir "ELIMINAR" en mayúsculas para confirmar la eliminación'
+        });
+      }
+
+      // Buscar usuario
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'Usuario no encontrado'
+        });
+      }
+
+      // Eliminar todas las relaciones en paralelo
+      await Promise.all([
+        // Eliminar amistades (donde el usuario es user1Id o user2Id)
+        Friendship.deleteMany({
+          $or: [
+            { user1Id: userId },
+            { user2Id: userId }
+          ]
+        }),
+        // Eliminar solicitudes de amistad (donde el usuario es senderId o receiverId)
+        FriendRequest.deleteMany({
+          $or: [
+            { senderId: userId },
+            { receiverId: userId }
+          ]
+        }),
+        // Eliminar registros de auditoría (donde el usuario es userId o actorId)
+        AuditLog.deleteMany({
+          $or: [
+            { userId: userId },
+            { actorId: userId }
+          ]
+        })
+      ]);
+
+      // Obtener todos los documentos del usuario antes de eliminarlos
+      const documents = await Document.find({ userId: userId });
+      
+      // Eliminar archivos físicos de los documentos
+      const deletePromises = documents.map(async (doc) => {
+        try {
+          if (doc.filePath) {
+            // El filePath ya es la ruta completa desde el middleware de upload
+            await fs.unlink(doc.filePath).catch(() => {
+              // Ignorar errores si el archivo no existe
+            });
+          }
+        } catch (error) {
+          console.error(`Error eliminando archivo ${doc.filePath}:`, error);
+          // Continuar incluso si hay errores al eliminar archivos
+        }
+      });
+      await Promise.all(deletePromises);
+
+      // Eliminar documentos de la base de datos
+      await Document.deleteMany({ userId: userId });
+
+      // Finalmente, eliminar el usuario
+      await User.findByIdAndDelete(userId);
+
+      res.json({
+        success: true,
+        message: 'Cuenta eliminada exitosamente'
       });
 
     } catch (error) {

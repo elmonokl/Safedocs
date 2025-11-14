@@ -1,5 +1,3 @@
-// src/components/Registro.jsx
-// Formulario de registro con validaciones mínimas de contraseña y confirmación.
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
@@ -40,27 +38,33 @@ function Registro({ cambiarVista, showToast }) {
       return
     }
 
-    const success = await register(formData)
-    if (success) {
-      showToast('¡Registro exitoso! Bienvenido a SafeDocs', 'success')
-      cambiarVista('dashboard')
-    } else {
+    try {
+      const success = await register(formData)
+      if (success) {
+        showToast('¡Registro exitoso! Bienvenido a SafeDocs', 'success')
+        cambiarVista('dashboard')
+      } else {
+        const errorMessage = 'Error en el registro. Verifica que todos los campos sean correctos.'
+        showToast(errorMessage, 'error')
+      }
+    } catch (error) {
+      console.error('Error en el registro:', error)
       showToast('Error en el registro. Intenta nuevamente.', 'error')
     }
   }
 
   return (
     <motion.div
-      className="flex flex-col items-center justify-center py-20 px-4 min-h-[70vh] bg-gradient-to-br from-indigo-100 via-white to-indigo-200"
+      className="flex flex-col items-center justify-center py-20 px-4 min-h-[70vh] bg-gradient-to-br from-blue-100 via-white to-red-50"
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -30 }}
       transition={{ duration: 0.6 }}
     >
-      <h2 className="text-3xl font-bold text-indigo-800 mb-6 drop-shadow">Crear Cuenta</h2>
+      <h2 className="text-3xl font-bold text-blue-800 mb-6 drop-shadow">Crear Cuenta</h2>
       <motion.form
         onSubmit={handleSubmit}
-        className="bg-white/60 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-md border border-indigo-100 space-y-4"
+        className="bg-white/60 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-md border border-blue-100 space-y-4"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.5 }}
@@ -75,7 +79,7 @@ function Registro({ cambiarVista, showToast }) {
             type="text"
             value={formData.name}
             onChange={handleChange}
-            className="w-full p-2 border rounded mb-4 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-sm transition"
+            className="w-full p-2 border rounded mb-4 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm transition"
             placeholder="Nombre Apellido"
             required
             aria-describedby="name-help"
@@ -95,7 +99,7 @@ function Registro({ cambiarVista, showToast }) {
             type="email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full p-2 border rounded mb-4 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-sm transition"
+            className="w-full p-2 border rounded mb-4 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm transition"
             placeholder="correo@unab.cl"
             required
             aria-describedby="email-help"
@@ -114,7 +118,7 @@ function Registro({ cambiarVista, showToast }) {
             name="career"
             value={formData.career}
             onChange={handleChange}
-            className="w-full p-2 border rounded mb-4 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-sm transition"
+            className="w-full p-2 border rounded mb-4 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm transition"
             required
           >
             <option value="Ingeniería en Computación e Informática">Ingeniería en Computación e Informática</option>
@@ -137,7 +141,7 @@ function Registro({ cambiarVista, showToast }) {
             name="role"
             value={formData.role}
             onChange={handleChange}
-            className="w-full p-2 border rounded mb-4 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 shadow-sm transition"
+            className="w-full p-2 border rounded mb-4 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 shadow-sm transition"
             required
             aria-describedby="role-help"
           >
@@ -214,7 +218,7 @@ function Registro({ cambiarVista, showToast }) {
         <motion.button
           type="submit"
           disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2 rounded-xl shadow-lg hover:bg-indigo-700 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-blue-600 text-white py-2 rounded-xl shadow-lg hover:bg-blue-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           whileHover={{ scale: loading ? 1 : 1.04 }}
           whileTap={{ scale: loading ? 1 : 0.97 }}
         >
@@ -232,7 +236,7 @@ function Registro({ cambiarVista, showToast }) {
         ¿Ya tienes cuenta?{' '}
         <button 
           onClick={() => cambiarVista('login')} 
-          className="text-indigo-600 hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded"
+          className="text-blue-600 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-400 rounded"
         >
           Inicia sesión
         </button>

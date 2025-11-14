@@ -47,6 +47,16 @@ export async function apiFetch(path, { method = 'GET', body, headers = {} } = {}
     const message = data?.message || 'Error de red';
     const error = new Error(message);
     error.status = response.status;
+    error.statusText = response.statusText;
+    error.response = data; // Incluir la respuesta completa para acceder a los errores de validación
+    console.error('Error en apiFetch:', {
+      status: response.status,
+      statusText: response.statusText,
+      data,
+      url,
+      method,
+      body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : null
+    });
     throw error;
   }
 

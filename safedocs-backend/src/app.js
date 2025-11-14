@@ -11,6 +11,7 @@ const documentRoutes = require('./routes/documents');
 const friendsRoutes = require('./routes/friends');
 const adminRoutes = require('./routes/admin');
 const auditRoutes = require('./routes/audit');
+const notificationRoutes = require('./routes/notifications');
 
 // Middleware
 // const { generalRateLimiter } = require('./middleware/auth'); // Rate limiting desactivado
@@ -61,7 +62,7 @@ app.use(cors({
     return callback(new Error('CORS: origen no permitido')); 
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   optionsSuccessStatus: 200
 }));
@@ -99,6 +100,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/friends', friendsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // 404 Handler
 app.use('*', (req, res) => {

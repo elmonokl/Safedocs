@@ -1,19 +1,19 @@
-// src/components/Dashboard.jsx
-// Vista principal del usuario: formulario de subida y listado de documentos.
-// Incluye menú hamburguesa y barra lateral con scroll a secciones.
 import React, { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Upload, FileUp, Inbox, FileText, ChevronRight, Edit, Trash2 } from 'lucide-react'
 import { useDocuments } from '../contexts/DocumentContext'
+import { useAuth } from '../contexts/AuthContext'
 import MenuHamburguesa from './MenuHamburguesa'
 import Sidebar from './Sidebar'
 import ModalDocumento from './ModalDocumento'
 import EditDocumentModal from './EditDocumentModal'
 import ConfirmDialog from './ConfirmDialog'
 import MisDocumentosModal from './MisDocumentosModal'
+import Notifications from './Notifications'
 
 function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }) {
-  const { uploadDocument, deleteDocument, loadDocuments, loading, documents } = useDocuments()
+  const { user } = useAuth()
+  const { uploadDocument, deleteDocument, loadDocuments, getDocumentById, loading, documents } = useDocuments()
 
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('Apuntes')
@@ -53,6 +53,14 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
     e.preventDefault()
 
     // Validaciones cliente
+    if (!title || !title.trim()) {
+      showToast && showToast('El título es obligatorio', 'warning')
+      return
+    }
+    if (!course || !course.trim()) {
+      showToast && showToast('Debes seleccionar un curso', 'warning')
+      return
+    }
     if (!file) {
       showToast && showToast('Debes seleccionar un archivo', 'warning')
       return
@@ -66,17 +74,22 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
       return
     }
 
-    const ok = await uploadDocument({ title, category, course, description, file })
-    if (ok) {
-      setTitle('')
-      setCategory('Apuntes')
-      setCourse('')
-      setDescription('')
-      setFile(null)
-      showToast && showToast('Documento subido correctamente', 'success')
-      loadDocuments()
-    } else {
-      showToast && showToast('No se pudo subir el documento', 'error')
+    try {
+      const ok = await uploadDocument({ title, category, course, description, file })
+      if (ok) {
+        setTitle('')
+        setCategory('Apuntes')
+        setCourse('')
+        setDescription('')
+        setFile(null)
+        showToast && showToast('Documento subido correctamente', 'success')
+        loadDocuments()
+      } else {
+        showToast && showToast('No se pudo subir el documento. Verifica los campos e intenta nuevamente.', 'error')
+      }
+    } catch (error) {
+      console.error('Error en handleUpload:', error)
+      showToast && showToast('Error al subir documento: ' + (error.message || 'Error desconocido'), 'error')
     }
   }
 
@@ -138,18 +151,22 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
   }
   
   const scrollToDocuments = () => {
-    // Abrir el modal de mis documentos en lugar de hacer scroll
     setShowMisDocumentosModal(true)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       <Sidebar cambiarVista={cambiarVista} onGoToUpload={scrollToUpload} onGoToDocuments={scrollToDocuments} />
       <div className="pl-0 md:pl-52 p-4 md:p-6 space-y-6">
         <div className="relative">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl md:text-2xl font-bold text-indigo-800">Bienvenido a tu Panel</h2>
-            <MenuHamburguesa cambiarVista={cambiarVista} />
+            <h2 className="text-xl md:text-2xl font-bold text-gray-400">
+              {user?.name ? `Bienvenido, ${user.name}` : 'Bienvenido a tu Panel'}
+            </h2>
+            <div className="flex items-center gap-2">
+              <Notifications cambiarVista={cambiarVista} />
+              <MenuHamburguesa cambiarVista={cambiarVista} />
+            </div>
           </div>
         </div>
 
@@ -157,7 +174,7 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
           ref={uploadRef} 
           onSubmit={handleUpload} 
           className={`bg-white rounded-2xl shadow border p-4 md:p-6 space-y-4 transition-all duration-500 ${
-            uploadFormHighlighted ? 'ring-4 ring-indigo-400 shadow-xl' : ''
+            uploadFormHighlighted ? 'ring-4 ring-blue-400 shadow-xl' : ''
           }`}
         >
           <h3 className="text-sm font-semibold text-gray-700">Subir Documento</h3>
@@ -168,7 +185,7 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
                 placeholder="Guía de Física 2024"
                 required
               />
@@ -178,13 +195,14 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                required
               >
-                <option>Apuntes</option>
-                <option>Guías</option>
-                <option>Pruebas</option>
-                <option>Resúmenes</option>
-                <option>Otros</option>
+                <option value="Apuntes">Apuntes</option>
+                <option value="Guías">Guías</option>
+                <option value="Pruebas">Pruebas</option>
+                <option value="Resúmenes">Resúmenes</option>
+                <option value="Otros">Otros</option>
               </select>
             </div>
             <div>
@@ -192,18 +210,18 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
               <select
                 value={course}
                 onChange={(e) => setCourse(e.target.value)}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
                 required
               >
                 <option value="">Selecciona un curso</option>
-                <option>Cálculo Diferencial</option>
-                <option>Mecánica</option>
-                <option>Programación</option>
-                <option>Base de Datos</option>
-                <option>Ingeniería de Software</option>
-                <option>Física</option>
-                <option>Química</option>
-                <option>Otro</option>
+                <option value="Cálculo Diferencial">Cálculo Diferencial</option>
+                <option value="Mecánica">Mecánica</option>
+                <option value="Programación">Programación</option>
+                <option value="Base de Datos">Base de Datos</option>
+                <option value="Ingeniería de Software">Ingeniería de Software</option>
+                <option value="Física">Física</option>
+                <option value="Química">Química</option>
+                <option value="Otro">Otro</option>
               </select>
             </div>
           </div>
@@ -211,7 +229,7 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
           <div>
             <label className="block text-sm text-gray-600 mb-2">Subir Documento</label>
             <div
-              className={`border-2 border-dashed rounded-xl p-10 text-center transition ${dragOver ? 'border-indigo-400 bg-indigo-50' : 'border-gray-300'}`}
+              className={`border-2 border-dashed rounded-xl p-10 text-center transition ${dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300'}`}
               onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
@@ -223,7 +241,7 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
               <p className="mt-3 text-gray-600">Arrastra aquí tu archivo o haz clic para seleccionarlo</p>
               <p className="text-xs text-gray-400 mt-1">PDF, DOC, DOCX, TXT, PPT, PPTX (máx. 50MB)</p>
               {file && (
-                <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded bg-indigo-50 text-indigo-700 text-sm">
+                <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded bg-blue-50 text-blue-700 text-sm">
                   <FileUp className="w-4 h-4" /> {file.name}
                 </div>
               )}
@@ -241,7 +259,7 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl shadow hover:bg-indigo-700 disabled:opacity-50"
+              className="inline-flex items-center gap-2 bg-sky-600 text-white px-4 py-2 rounded-xl shadow hover:bg-sky-700 disabled:opacity-50"
             >
               <Upload className="w-4 h-4" /> {loading ? 'Subiendo...' : 'Subir'}
             </button>
@@ -257,7 +275,7 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
               <div key={doc.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <h4 className="text-sm font-medium text-indigo-700 hover:underline cursor-default">{doc.title}</h4>
+                    <h4 className="text-sm font-medium text-blue-700 hover:underline cursor-default">{doc.title}</h4>
                     <p className="text-xs text-gray-500">
                       {doc.course && `Curso: ${doc.course} | `}Categoría: {doc.category} | Subido: {new Date(doc.date).toLocaleDateString()}
                     </p>
@@ -265,7 +283,7 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setEditingDoc(doc)}
-                      className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-sm bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded transition-colors"
+                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition-colors"
                       title="Editar documento"
                     >
                       <Edit className="w-4 h-4" />
@@ -278,8 +296,17 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
                       <Trash2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => setSelectedDoc(doc)}
-                      className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-sm bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded transition-colors"
+                      onClick={async () => {
+                        // Obtener el documento completo para registrar visualización
+                        const fullDoc = await getDocumentById(doc.id)
+                        if (fullDoc) {
+                          setSelectedDoc(fullDoc)
+                        } else {
+                          // Si falla, usar el documento de la lista
+                          setSelectedDoc(doc)
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded transition-colors"
                     >
                       Ver <ChevronRight className="w-4 h-4" />
                     </button>
