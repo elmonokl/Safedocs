@@ -17,7 +17,6 @@ function SubirDocumentoOficial({ cambiarVista, onSuccess, showToast }) {
   const inputRef = useRef(null)
   const uploadRef = useRef(null)
 
-  // Verificar que el usuario sea profesor
   if (user?.role !== 'professor') {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -40,7 +39,6 @@ function SubirDocumentoOficial({ cambiarVista, onSuccess, showToast }) {
     )
   }
 
-  // Límite de tamaño (cliente): 50MB
   const MAX_SIZE_BYTES = 50 * 1024 * 1024
   const ALLOWED_TYPES = new Set([
     'application/pdf',
@@ -85,7 +83,6 @@ function SubirDocumentoOficial({ cambiarVista, onSuccess, showToast }) {
     e.preventDefault()
     setError('')
 
-    // Validaciones
     if (!file) {
       setError('Debes seleccionar un archivo')
       return
@@ -128,7 +125,6 @@ function SubirDocumentoOficial({ cambiarVista, onSuccess, showToast }) {
         throw new Error(data.message || 'Error al subir documento oficial')
       }
 
-      // Limpiar formulario
       setTitle('')
       setCategory('Apuntes')
       setCourse('')

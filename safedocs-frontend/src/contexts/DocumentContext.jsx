@@ -2,12 +2,6 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import { apiFetch } from '../utils/api'
 import { useAuth } from './AuthContext'
 
-/**
- * Context de Documentos
- * Gestiona el estado global de documentos del usuario
- */
-
-// Mapeo de categorías del backend (inglés) al frontend (español)
 const CATEGORY_MAP = {
   'academic': 'Apuntes',
   'research': 'Guías',
@@ -15,7 +9,6 @@ const CATEGORY_MAP = {
   'other': 'Otro'
 }
 
-// Función auxiliar para mapear documentos del backend al frontend
 const mapDocument = (doc, user) => ({
   id: doc._id || doc.id,
   title: doc.title,
@@ -63,7 +56,6 @@ export const DocumentProvider = ({ children }) => {
         const mapped = resp.data.documents.map(doc => mapDocument(doc, user))
         setDocuments(mapped)
       } else {
-        // Si no hay documentos, establecer array vacío
         setDocuments([])
       }
     } catch (err) {
@@ -129,7 +121,6 @@ export const DocumentProvider = ({ children }) => {
       const errorMessage = err.message || err.statusText || 'Error al subir documento'
       setError(errorMessage)
       
-      // Si es un error de autenticación, limpiar sesión
       if (err.status === 401 || err.status === 403) {
         localStorage.removeItem('token')
         localStorage.removeItem('safedocs_user')
@@ -209,7 +200,6 @@ export const DocumentProvider = ({ children }) => {
     try {
       const resp = await apiFetch(`/api/documents/${documentId}`)
       if (resp?.success && resp?.data?.document) {
-        // El backend registra automáticamente la visualización
         return mapDocument(resp.data.document, user)
       } else {
         throw new Error('Documento no encontrado')
@@ -256,7 +246,6 @@ export const DocumentProvider = ({ children }) => {
 
       const blob = await response.blob()
       
-      // Obtener el nombre del archivo del header Content-Disposition
       const contentDisposition = response.headers.get('Content-Disposition')
       let fileName = `documento-${documentId}`
       if (contentDisposition) {
@@ -266,7 +255,6 @@ export const DocumentProvider = ({ children }) => {
         }
       }
 
-      // Crear un enlace temporal para descargar el archivo
       const blobUrl = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = blobUrl
@@ -276,7 +264,6 @@ export const DocumentProvider = ({ children }) => {
       document.body.removeChild(link)
       window.URL.revokeObjectURL(blobUrl)
 
-      // Actualizar el contador de descargas localmente
       setDocuments(prev =>
         prev.map(doc =>
           doc.id === documentId

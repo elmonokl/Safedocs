@@ -1,4 +1,3 @@
-// src/components/ModalDocumento.jsx
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useDocuments } from '../contexts/DocumentContext'
@@ -214,7 +213,6 @@ function ModalDocumento({ documento, onClose, onDocumentUpdated, onDocumentDelet
         }}
         onConfirm={async () => {
           const success = await handleDelete()
-          // Retornar false si falla para que el diálogo no se cierre
           return success
         }}
         title="Eliminar documento"
@@ -233,7 +231,6 @@ function ModalDocumento({ documento, onClose, onDocumentUpdated, onDocumentDelet
             setShareUrl('')
           }}
           onShareWithFriends={() => {
-            // Opcional: recargar documentos o mostrar notificación
           }}
         />
       )}

@@ -2,14 +2,10 @@ const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 
-/**
- * Middleware de Autenticación
- * Gestiona autenticación JWT, control de acceso y rate limiting
- */
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({
@@ -18,10 +14,8 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Verificar token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Verificar que el usuario existe y está activo
     const user = await User.findById(decoded.userId);
     if (!user || !user.isActive) {
       return res.status(401).json({
@@ -30,7 +24,6 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Agregar información del usuario al request
     req.user = {
       userId: user._id,
       email: user.email,
@@ -61,30 +54,24 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Middleware de autenticación opcional (no falla si no hay token)
 const optionalAuthenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-      // Si no hay token, continuar sin autenticación
       req.user = null;
       return next();
     }
 
-    // Verificar token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Verificar que el usuario existe y está activo
     const user = await User.findById(decoded.userId);
     if (!user || !user.isActive) {
-      // Si el usuario no existe o está inactivo, continuar sin autenticación
       req.user = null;
       return next();
     }
 
-    // Agregar información del usuario al request
     req.user = {
       userId: user._id,
       email: user.email,
@@ -93,29 +80,24 @@ const optionalAuthenticateToken = async (req, res, next) => {
 
     next();
   } catch (error) {
-    // Si hay cualquier error, continuar sin autenticación (para rutas públicas)
     req.user = null;
     next();
   }
 };
 
-// Rate limiter para autenticación
 const authRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 5, // máximo 5 intentos
+  windowMs: 15 * 60 * 1000,
+  max: 5,
   message: (req, res) => {
-    // Obtener el tiempo de reset del header si está disponible
     const resetHeader = res.get('X-RateLimit-Reset');
     let resetTime;
     let secondsRemaining;
     
     if (resetHeader) {
-      // Si el header es un timestamp en segundos
       resetTime = parseInt(resetHeader);
       secondsRemaining = resetTime - Math.floor(Date.now() / 1000);
     } else {
-      // Fallback: calcular basado en la ventana de tiempo
-      secondsRemaining = 15 * 60; // 15 minutos en segundos
+      secondsRemaining = 15 * 60;
       resetTime = Math.floor(Date.now() / 1000) + secondsRemaining;
     }
     
@@ -132,23 +114,19 @@ const authRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Rate limiter general
 const generalRateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100, // máximo 100 requests
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: (req, res) => {
-    // Obtener el tiempo de reset del header si está disponible
     const resetHeader = res.get('X-RateLimit-Reset');
     let resetTime;
     let secondsRemaining;
     
     if (resetHeader) {
-      // Si el header es un timestamp en segundos
       resetTime = parseInt(resetHeader);
       secondsRemaining = resetTime - Math.floor(Date.now() / 1000);
     } else {
-      // Fallback: calcular basado en la ventana de tiempo
-      secondsRemaining = 15 * 60; // 15 minutos en segundos
+      secondsRemaining = 15 * 60;
       resetTime = Math.floor(Date.now() / 1000) + secondsRemaining;
     }
     
@@ -164,12 +142,10 @@ const generalRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => {
-    // Saltar rate limiting en rutas de health check
     return req.path === '/health' || req.path === '/api/health';
   }
 });
 
-// Middleware para actualizar último acceso
 const updateLastSeen = async (req, res, next) => {
   try {
     if (req.user && req.user.userId) {
@@ -181,7 +157,7 @@ const updateLastSeen = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Error actualizando último acceso:', error);
-    next(); // Continuar aunque falle la actualización
+    next();
   }
 };
 

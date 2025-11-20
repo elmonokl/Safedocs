@@ -66,7 +66,6 @@ const ConfirmDialog = ({
             <button
               onClick={async () => {
                 const result = await onConfirm()
-                // Si onConfirm retorna false o una promesa rechazada, no cerrar
                 if (result !== false) {
                   onClose()
                 }

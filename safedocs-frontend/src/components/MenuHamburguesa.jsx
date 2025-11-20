@@ -1,4 +1,3 @@
-// src/components/MenuHamburguesa.jsx
 import { Menu, X, User, Users, FileText, LogOut, Shield, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
@@ -19,7 +18,6 @@ function MenuHamburguesa({ cambiarVista }) {
     { label: 'Registro de Auditoría', icono: <FileText size={18} />, vista: 'auditoria' },
     { label: 'Quién vio mi documento', icono: <Users size={18} />, vista: 'vistos' },
     ...(isAdmin ? [{ label: 'Panel Admin', icono: <Shield size={18} />, vista: 'admin' }] : []),
-    // Permitir eliminar cuenta para todos los roles, incluyendo super admins
     { label: 'Eliminar cuenta', icono: <Trash2 size={18} />, vista: 'delete', action: 'delete' },
     { label: 'Cerrar sesión', icono: <LogOut size={18} />, vista: 'inicio', action: 'logout' },
   ]

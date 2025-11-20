@@ -78,7 +78,6 @@ function AppContent() {
           {vista === 'documentos-compartidos' && <VistaDocumentosCompartidos cambiarVista={setVista} />}
           {vista === 'subir-oficial' && <SubirDocumentoOficial cambiarVista={setVista} showToast={showToast} />}
 
-          {/* Toast notifications */}
           {toast && (
             <Toast
               message={toast.message}
@@ -87,7 +86,6 @@ function AppContent() {
             />
           )}
 
-          {/* Confirm Dialog */}
           {confirmDialog && (
             <ConfirmDialog
               isOpen={!!confirmDialog}

@@ -1,5 +1,3 @@
-// src/components/MisDocumentosModal.jsx
-// Modal que muestra todos los documentos del usuario en una ventana
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, FileText, Edit, Trash2, ChevronRight, Download, Share2 } from 'lucide-react'
@@ -19,12 +17,10 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
   const [loadingShare, setLoadingShare] = useState(false)
   const [deleteError, setDeleteError] = useState('')
 
-  // Cargar documentos cuando se abre el modal
   useEffect(() => {
     if (isOpen) {
       loadDocuments()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
 
   const handleDelete = async (docId) => {
@@ -81,7 +77,6 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -90,7 +85,6 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
             onClick={onClose}
           />
 
-          {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -100,7 +94,6 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-              {/* Header */}
               <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-gray-900">Mis Documentos</h2>
                 <button
@@ -112,7 +105,6 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
                 </button>
               </div>
 
-              {/* Content */}
               <div className="flex-1 overflow-y-auto">
                 {loading ? (
                   <div className="flex flex-col items-center justify-center py-12">
@@ -176,12 +168,10 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
                             </button>
                             <button
                               onClick={async () => {
-                                // Obtener el documento completo para registrar visualización
                                 const fullDoc = await getDocumentById(doc.id)
                                 if (fullDoc) {
                                   setSelectedDoc(fullDoc)
                                 } else {
-                                  // Si falla, usar el documento de la lista
                                   setSelectedDoc(doc)
                                 }
                               }}
@@ -197,7 +187,6 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
                 )}
               </div>
 
-              {/* Footer */}
               <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                 <p className="text-sm text-gray-500">
                   {documents.length} documento{documents.length !== 1 ? 's' : ''} en total
@@ -212,7 +201,6 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
             </div>
           </motion.div>
 
-          {/* Modales anidados */}
           {selectedDoc && (
             <ModalDocumento 
               documento={documents.find(d => d.id === selectedDoc.id) || selectedDoc}
@@ -262,7 +250,6 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
             </div>
           )}
 
-          {/* Modal de compartir */}
           {sharingDoc && shareUrl && (
             <ShareQRModal
               documentId={sharingDoc.id}

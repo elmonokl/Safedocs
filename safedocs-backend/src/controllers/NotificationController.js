@@ -1,12 +1,7 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 
-/**
- * Controlador de Notificaciones
- * Gestiona la creación, obtención y marcado de notificaciones
- */
 class NotificationController {
-  // Obtener notificaciones del usuario
   static async getNotifications(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -37,7 +32,6 @@ class NotificationController {
     }
   }
 
-  // Obtener contador de notificaciones no leídas
   static async getUnreadCount(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -54,7 +48,6 @@ class NotificationController {
     }
   }
 
-  // Marcar notificación como leída
   static async markAsRead(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -81,7 +74,6 @@ class NotificationController {
     }
   }
 
-  // Marcar todas las notificaciones como leídas
   static async markAllAsRead(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -99,7 +91,6 @@ class NotificationController {
     }
   }
 
-  // Crear notificación de solicitud de amistad (método estático para usar desde otros controladores)
   static async createFriendRequestNotification(receiverId, senderId) {
     try {
       const sender = await User.findById(senderId).select('name');
@@ -113,7 +104,6 @@ class NotificationController {
         senderId
       );
 
-      // Personalizar el mensaje con el nombre del remitente
       notification.message = `${sender.name} te ha enviado una solicitud de amistad`;
       await notification.save();
 
@@ -124,7 +114,6 @@ class NotificationController {
     }
   }
 
-  // Crear notificaciones de documento oficial (método estático para usar desde otros controladores)
   static async createOfficialDocumentNotification(documentId, professorId) {
     try {
       const professor = await User.findById(professorId).select('name');
@@ -133,10 +122,9 @@ class NotificationController {
         return [];
       }
 
-      // Obtener todos los usuarios activos excepto el profesor
-      const users = await User.find({ 
-        isActive: true, 
-        _id: { $ne: professorId } 
+      const users = await User.find({
+        isActive: true,
+        _id: { $ne: professorId }
       }).select('_id');
 
       if (users.length === 0) {

@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { apiFetch } from '../utils/api'
 
-// Contexto de autenticación: expone usuario, estado de carga y acciones
 const AuthContext = createContext()
 
 export const useAuth = () => {
@@ -17,7 +16,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  // Al montar: verifica sesión usando el token guardado
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -45,7 +43,6 @@ export const AuthProvider = ({ children }) => {
     checkAuth()
   }, [])
 
-  // Iniciar sesión y persistir token/usuario
   const login = async (email, password) => {
     setError('')
     setLoading(true)
@@ -70,13 +67,11 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Registro de usuario y login inmediato
   const register = async (userData) => {
     setError('')
     setLoading(true)
     
     try {
-      // Remover confirmPassword del objeto antes de enviarlo al backend
       const { confirmPassword, ...dataToSend } = userData
       
       const resp = await apiFetch('/api/auth/register', {
@@ -98,7 +93,6 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Cerrar sesión: intenta notificar al backend y limpia storage
   const logout = async () => {
     try {
       await apiFetch('/api/auth/logout', { method: 'POST' })
@@ -108,7 +102,6 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token')
   }
 
-  // Actualiza datos del perfil en el backend y en localStorage
   const updateProfile = async (profileData) => {
     setError('')
     setLoading(true)
@@ -128,7 +121,6 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Eliminar cuenta de usuario
   const deleteAccount = async (confirmation) => {
     setError('')
     setLoading(true)
@@ -139,7 +131,6 @@ export const AuthProvider = ({ children }) => {
         body: { confirmation }
       })
       if (!resp?.success) throw new Error(resp?.message || 'No se pudo eliminar la cuenta')
-      // Limpiar datos locales después de eliminar la cuenta
       setUser(null)
       localStorage.removeItem('safedocs_user')
       localStorage.removeItem('token')

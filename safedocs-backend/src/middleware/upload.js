@@ -2,14 +2,12 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Asegura que un directorio exista
 function ensureDirExists(targetPath) {
   if (!fs.existsSync(targetPath)) {
     fs.mkdirSync(targetPath, { recursive: true });
   }
 }
 
-// Crea un uploader con destino y validaciones configurables
 function createUpload({ destination, maxFileSizeBytes, allowedExtensions, allowedMimeTypes, filenamePrefix }) {
   ensureDirExists(destination);
 
@@ -46,16 +44,14 @@ function createUpload({ destination, maxFileSizeBytes, allowedExtensions, allowe
   return upload;
 }
 
-// Uploader para documentos
 const documentUpload = createUpload({
   destination: path.join(__dirname, '../../uploads/documents'),
-  maxFileSizeBytes: parseInt(process.env.MAX_FILE_SIZE, 10) || 50 * 1024 * 1024, // 50MB por defecto
+  maxFileSizeBytes: parseInt(process.env.MAX_FILE_SIZE, 10) || 50 * 1024 * 1024,
   allowedExtensions: (process.env.ALLOWED_FILE_TYPES || 'pdf,doc,docx,txt,ppt,pptx').split(','),
   allowedMimeTypes: [],
   filenamePrefix: 'document'
 });
 
-// Uploader para perfiles (imágenes)
 const profileUpload = createUpload({
   destination: path.join(__dirname, '../../uploads/profiles'),
   maxFileSizeBytes: 5 * 1024 * 1024,

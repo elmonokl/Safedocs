@@ -1,9 +1,7 @@
-// src/components/VistaPerfil.jsx
 import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Save, Edit3, User } from 'lucide-react'
 
-// Función para traducir roles al español
 const getRoleLabel = (role) => {
   const roleMap = {
     'student': 'Estudiante',
@@ -14,7 +12,6 @@ const getRoleLabel = (role) => {
   return roleMap[role] || role
 }
 
-// Función para obtener el color del rol
 const getRoleColor = (role) => {
   const colorMap = {
     'student': 'bg-blue-100 text-blue-700 border-blue-300',

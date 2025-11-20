@@ -51,7 +51,6 @@ function VistaVistos({ cambiarVista }) {
     if (hours < 24) return `Hace ${hours} ${hours === 1 ? 'hora' : 'horas'}`
     if (days < 7) return `Hace ${days} ${days === 1 ? 'día' : 'días'}`
 
-    // Formato completo con fecha y hora
     return date.toLocaleString('es-CL', {
       year: 'numeric',
       month: 'long',

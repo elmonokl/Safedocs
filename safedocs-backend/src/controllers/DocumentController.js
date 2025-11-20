@@ -11,21 +11,18 @@ const { documentUpload } = require('../middleware/upload');
 const upload = documentUpload;
 
 class DocumentController {
-  // Mapea categorías del frontend al modelo
   static mapCategoryToModel(category) {
     const mapping = {
       'Apuntes': 'academic',
       'Guías': 'research',
       'Resumen': 'project',
-      'Resúmenes': 'project', // Aceptar plural también
-      'Pruebas': 'academic', // Mapear Pruebas a academic
+      'Resúmenes': 'project',
+      'Pruebas': 'academic',
       'Otro': 'other',
-      'Otros': 'other' // Aceptar plural también
+      'Otros': 'other'
     };
     return mapping[category] || category;
   }
-
-  // Subir nuevo documento
   static async uploadDocument(req, res, next) {
     try {
       if (!req.file) {
@@ -39,7 +36,6 @@ class DocumentController {
       const { title, description, course } = req.body;
       const category = DocumentController.mapCategoryToModel(req.body.category);
 
-      // Validar que course esté presente
       if (!course || !course.trim()) {
         return res.status(400).json({
           success: false,
@@ -57,7 +53,7 @@ class DocumentController {
         filePath: req.file.path,
         fileType: req.file.mimetype,
         fileSize: req.file.size,
-        isOfficial: false // Los documentos normales no son oficiales
+        isOfficial: false
       };
 
       const newDocument = await Document.create(documentData);
@@ -65,8 +61,8 @@ class DocumentController {
         .populate('author', 'name career profilePicture');
 
       await AuditLog.createLog({
-        userId: userId, // El propietario del documento
-        actorId: userId, // Quien realizó la acción
+        userId: userId,
+        actorId: userId,
         documentId: newDocument._id,
         action: 'upload',
         description: `Documento "${title}" subido exitosamente`,
@@ -82,19 +78,16 @@ class DocumentController {
       });
 
     } catch (error) {
-      // Rollback: eliminar archivo si falla la BD
       if (req.file) {
         try {
           await fs.unlink(req.file.path);
         } catch (unlinkError) {
-          // Ignorar error de unlink
+          console.error('Error eliminando archivo después de fallo:', unlinkError);
         }
       }
       next(error);
     }
   }
-
-  // Subir documento oficial (solo profesores)
   static async uploadOfficialDocument(req, res, next) {
     try {
       if (!req.file) {
@@ -107,13 +100,11 @@ class DocumentController {
       const userId = req.user.userId;
       const userRole = req.user.role;
 
-      // Verificar que el usuario sea profesor
       if (userRole !== 'professor') {
-        // Eliminar el archivo subido si no es profesor
         try {
           await fs.unlink(req.file.path);
         } catch (unlinkError) {
-          // Ignorar error de unlink
+          console.error('Error eliminando archivo:', unlinkError);
         }
         return res.status(403).json({
           success: false,
@@ -121,7 +112,6 @@ class DocumentController {
         });
       }
 
-      // Obtener información del profesor
       const professor = await User.findById(userId);
       if (!professor) {
         return res.status(404).json({
@@ -133,13 +123,11 @@ class DocumentController {
       const { title, description, course } = req.body;
       const category = DocumentController.mapCategoryToModel(req.body.category || 'academic');
 
-      // Validar que course esté presente
       if (!course || !course.trim()) {
-        // Eliminar el archivo subido si falta información
         try {
           await fs.unlink(req.file.path);
         } catch (unlinkError) {
-          // Ignorar error de unlink
+          console.error('Error eliminando archivo:', unlinkError);
         }
         return res.status(400).json({
           success: false,
@@ -157,9 +145,9 @@ class DocumentController {
         filePath: req.file.path,
         fileType: req.file.mimetype,
         fileSize: req.file.size,
-        isOfficial: true, // Marcar como documento oficial
-        isPublic: true, // Los documentos oficiales son públicos
-        shareToken: null // Los documentos oficiales no se comparten por token
+        isOfficial: true,
+        isPublic: true,
+        shareToken: null
       };
 
       const newDocument = await Document.create(documentData);
@@ -167,20 +155,18 @@ class DocumentController {
         .populate('author', 'name career profilePicture');
 
       await AuditLog.createLog({
-        userId: userId, // El propietario del documento (profesor)
-        actorId: userId, // Quien realizó la acción
+        userId: userId,
+        actorId: userId,
         documentId: newDocument._id,
         action: 'upload',
         description: `Documento oficial "${title}" subido por profesor ${professor.name}`,
         comment: `Curso: ${course.trim()}`
       });
 
-      // Crear notificaciones para todos los usuarios (sin esperar, en segundo plano)
       const NotificationController = require('./NotificationController');
       NotificationController.createOfficialDocumentNotification(newDocument._id, userId)
         .catch(error => {
           console.error('Error creando notificaciones de documento oficial:', error);
-          // No fallar la respuesta si las notificaciones fallan
         });
 
       res.status(201).json({
@@ -192,19 +178,16 @@ class DocumentController {
       });
 
     } catch (error) {
-      // Rollback: eliminar archivo si falla la BD
       if (req.file) {
         try {
           await fs.unlink(req.file.path);
         } catch (unlinkError) {
-          // Ignorar error de unlink
+          console.error('Error eliminando archivo después de fallo:', unlinkError);
         }
       }
       next(error);
     }
   }
-
-  // Obtener todos los documentos
   static async getAllDocuments(req, res, next) {
     try {
       const { page = 1, limit = 20, search, category } = req.query;
@@ -222,7 +205,6 @@ class DocumentController {
           .limit(parseInt(limit));
       }
 
-      // Contar total de documentos
       const total = await Document.countDocuments(query);
 
       res.json({
@@ -243,14 +225,12 @@ class DocumentController {
     }
   }
 
-  // Obtener documentos del usuario
   static async getMyDocuments(req, res, next) {
     try {
       const userId = req.user.userId;
       const { page = 1, limit = 20 } = req.query;
       const skip = (page - 1) * limit;
 
-      // Excluir documentos oficiales (isOfficial: false o no existe)
       const query = { userId, $or: [{ isOfficial: false }, { isOfficial: { $exists: false } }] };
       
       const documents = await Document.find(query)
@@ -280,7 +260,6 @@ class DocumentController {
     }
   }
 
-  // Obtener documento por ID
   static async getDocumentById(req, res, next) {
     try {
       const { id } = req.params;
@@ -296,19 +275,17 @@ class DocumentController {
         });
       }
 
-      // Registrar visualización si hay un usuario autenticado y no es el propietario
       if (viewerId && document.userId.toString() !== viewerId) {
         try {
           await AuditLog.createLog({
-            userId: document.userId, // El propietario del documento
-            actorId: viewerId, // Quien vio el documento
+            userId: document.userId,
+            actorId: viewerId,
             documentId: document._id,
             action: 'view',
             description: `Documento "${document.title}" visualizado`,
             comment: ''
           });
         } catch (auditError) {
-          // No fallar la respuesta si falla el registro de auditoría
           console.error('Error registrando visualización:', auditError);
         }
       }
@@ -325,7 +302,6 @@ class DocumentController {
     }
   }
 
-  // Descargar documento
   static async downloadDocument(req, res, next) {
     try {
       const { id } = req.params;
@@ -352,8 +328,8 @@ class DocumentController {
       const userId = req.user?.userId || null;
       if (userId) {
         await AuditLog.createLog({
-          userId: document.userId, // El propietario del documento
-          actorId: userId, // Quien descargó el documento
+          userId: document.userId,
+          actorId: userId,
           documentId: document._id,
           action: 'download',
           description: `Documento "${document.title}" descargado`,
@@ -368,7 +344,6 @@ class DocumentController {
     }
   }
 
-  // Actualizar documento
   static async updateDocument(req, res, next) {
     try {
       const { id } = req.params;
@@ -405,7 +380,6 @@ class DocumentController {
         { new: true, runValidators: true }
       ).populate('author', 'name career profilePicture');
 
-      // Registrar en auditoría
       const changes = [];
       if (title && title !== document.title) {
         changes.push(`Título: "${document.title}" → "${title}"`);
@@ -421,8 +395,8 @@ class DocumentController {
       }
 
       await AuditLog.createLog({
-        userId: userId, // El propietario del documento
-        actorId: userId, // Quien realizó la acción
+        userId: userId,
+        actorId: userId,
         documentId: document._id,
         action: 'update',
         description: `Documento "${updatedDocument.title}" actualizado exitosamente`,
@@ -442,13 +416,11 @@ class DocumentController {
     }
   }
 
-  // Eliminar documento
   static async deleteDocument(req, res, next) {
     try {
       const { id } = req.params;
       const userId = req.user.userId;
 
-      // Verificar que el documento existe y pertenece al usuario
       const document = await Document.findById(id);
       if (!document) {
         return res.status(404).json({
@@ -457,7 +429,6 @@ class DocumentController {
         });
       }
 
-      // Comparar ObjectIds correctamente
       const documentUserId = document.userId.toString();
       const requestUserId = userId.toString();
       
@@ -468,7 +439,6 @@ class DocumentController {
         });
       }
 
-      // Eliminar archivo del sistema
       try {
         await fs.unlink(document.filePath);
       } catch (error) {
@@ -476,8 +446,8 @@ class DocumentController {
       }
 
       await AuditLog.createLog({
-        userId: userId, // El propietario del documento
-        actorId: userId, // Quien realizó la acción
+        userId: userId,
+        actorId: userId,
         documentId: document._id,
         action: 'delete',
         description: `Documento "${document.title}" eliminado exitosamente`,
@@ -496,7 +466,6 @@ class DocumentController {
     }
   }
 
-  // Obtener documentos populares
   static async getPopularDocuments(req, res, next) {
     try {
       const { limit = 10 } = req.query;
@@ -514,7 +483,6 @@ class DocumentController {
     }
   }
 
-  // Obtener estadísticas
   static async getStats(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -537,7 +505,6 @@ class DocumentController {
     }
   }
 
-  // Generar o obtener link de compartir
   static async generateShareLink(req, res, next) {
     try {
       const { id } = req.params;
@@ -551,7 +518,6 @@ class DocumentController {
         });
       }
 
-      // No permitir compartir documentos oficiales
       if (document.isOfficial) {
         return res.status(403).json({
           success: false,
@@ -559,7 +525,6 @@ class DocumentController {
         });
       }
 
-      // Verificar que el usuario es el propietario
       if (document.userId.toString() !== userId.toString()) {
         return res.status(403).json({
           success: false,
@@ -567,17 +532,13 @@ class DocumentController {
         });
       }
 
-      // Generar token si no existe
       if (!document.shareToken) {
         await document.generateShareToken();
-        // Recargar el documento desde la base de datos para obtener el token actualizado
         document = await Document.findById(id).populate('author', 'name career profilePicture');
       } else {
-        // Si ya tiene token, solo poblar el autor
         await document.populate('author', 'name career profilePicture');
       }
 
-      // Construir la URL del frontend
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
       const shareUrl = `${frontendUrl}/documento/${document.shareToken}`;
 
@@ -595,11 +556,9 @@ class DocumentController {
     }
   }
 
-  // Obtener documento por token de compartir (público, sin autenticación)
   static async getDocumentByToken(req, res, next) {
     try {
       const { token } = req.params;
-      // Obtener userId si hay un usuario autenticado (opcional para documentos compartidos)
       const viewerId = req.user?.userId || null;
 
       const document = await Document.findByShareToken(token);
@@ -610,19 +569,17 @@ class DocumentController {
         });
       }
 
-      // Registrar visualización si hay un usuario autenticado y no es el propietario
       if (viewerId && document.userId.toString() !== viewerId) {
         try {
           await AuditLog.createLog({
-            userId: document.userId, // El propietario del documento
-            actorId: viewerId, // Quien vio el documento
+            userId: document.userId,
+            actorId: viewerId,
             documentId: document._id,
             action: 'view',
             description: `Documento compartido "${document.title}" visualizado`,
             comment: ''
           });
         } catch (auditError) {
-          // No fallar la respuesta si falla el registro de auditoría
           console.error('Error registrando visualización de documento compartido:', auditError);
         }
       }
@@ -639,11 +596,9 @@ class DocumentController {
     }
   }
 
-  // Descargar documento por token (público, sin autenticación)
   static async downloadByToken(req, res, next) {
     try {
       const { token } = req.params;
-      // Obtener userId si hay un usuario autenticado (opcional para documentos compartidos)
       const downloaderId = req.user?.userId || null;
 
       const document = await Document.findByShareToken(token);
@@ -665,19 +620,17 @@ class DocumentController {
 
       await document.incrementDownloads();
 
-      // Registrar descarga si hay un usuario autenticado y no es el propietario
       if (downloaderId && document.userId.toString() !== downloaderId) {
         try {
           await AuditLog.createLog({
-            userId: document.userId, // El propietario del documento
-            actorId: downloaderId, // Quien descargó el documento
+            userId: document.userId,
+            actorId: downloaderId,
             documentId: document._id,
             action: 'download',
             description: `Documento compartido "${document.title}" descargado`,
             comment: `Descarga #${document.downloadsCount + 1}`
           });
         } catch (auditError) {
-          // No fallar la respuesta si falla el registro de auditoría
           console.error('Error registrando descarga de documento compartido:', auditError);
         }
       }
@@ -689,17 +642,14 @@ class DocumentController {
     }
   }
 
-  // Obtener todos los documentos oficiales (público)
   static async getOfficialDocuments(req, res, next) {
     try {
       const { page = 1, limit = 50, search, professor } = req.query;
       const skip = (parseInt(page) - 1) * parseInt(limit);
       const numericLimit = Math.min(parseInt(limit) || 50, 100);
       
-      // Construir query para documentos oficiales
       let query = { isOfficial: true, isPublic: true };
       
-      // Si hay búsqueda, agregar filtro de texto
       if (search && typeof search === 'string' && search.trim()) {
         query.$or = [
           { title: { $regex: search.trim(), $options: 'i' } },
@@ -707,10 +657,8 @@ class DocumentController {
         ];
       }
       
-      // Si hay filtro de profesor, buscar usuarios primero y luego filtrar por userId
       if (professor && typeof professor === 'string' && professor.trim()) {
         try {
-          // Buscar profesores que coincidan con el nombre (solo IDs para eficiencia)
           const professorName = professor.trim();
           const professorUsers = await User.find({
             role: 'professor',
@@ -723,7 +671,6 @@ class DocumentController {
             if (professorIds.length > 0) {
               query.userId = { $in: professorIds };
             } else {
-              // Si no hay IDs válidos, retornar vacío
               return res.json({
                 success: true,
                 data: {
@@ -738,7 +685,6 @@ class DocumentController {
               });
             }
           } else {
-            // Si no hay profesores que coincidan, retornar vacío
             return res.json({
               success: true,
               data: {
@@ -753,12 +699,10 @@ class DocumentController {
             });
           }
         } catch (profError) {
-          // Si hay error buscando profesores, continuar sin filtro
           console.error('Error filtrando por profesor:', profError);
         }
       }
       
-      // Obtener documentos con paginación
       const [documents, total] = await Promise.all([
         Document.find(query)
           .populate('author', 'name career profilePicture')
@@ -788,7 +732,6 @@ class DocumentController {
     }
   }
 
-  // Obtener documento oficial por ID (público, pero registra visualización si hay usuario autenticado)
   static async getOfficialDocumentById(req, res, next) {
     try {
       const { id } = req.params;
@@ -804,19 +747,17 @@ class DocumentController {
         });
       }
 
-      // Registrar visualización si hay un usuario autenticado y no es el propietario
       if (viewerId && document.userId.toString() !== viewerId) {
         try {
           await AuditLog.createLog({
-            userId: document.userId, // El propietario del documento (profesor)
-            actorId: viewerId, // Quien vio el documento
+            userId: document.userId,
+            actorId: viewerId,
             documentId: document._id,
             action: 'view',
             description: `Documento oficial "${document.title}" visualizado`,
             comment: `Curso: ${document.course}`
           });
         } catch (auditError) {
-          // No fallar la respuesta si falla el registro de auditoría
           console.error('Error registrando visualización de documento oficial:', auditError);
         }
       }
@@ -833,7 +774,6 @@ class DocumentController {
     }
   }
 
-  // Descargar documento oficial (público, pero registra descarga si hay usuario autenticado)
   static async downloadOfficialDocument(req, res, next) {
     try {
       const { id } = req.params;
@@ -859,19 +799,17 @@ class DocumentController {
 
       await document.incrementDownloads();
 
-      // Registrar descarga si hay un usuario autenticado y no es el propietario
       if (downloaderId && document.userId.toString() !== downloaderId) {
         try {
           await AuditLog.createLog({
-            userId: document.userId, // El propietario del documento (profesor)
-            actorId: downloaderId, // Quien descargó el documento
+            userId: document.userId,
+            actorId: downloaderId,
             documentId: document._id,
             action: 'download',
             description: `Documento oficial "${document.title}" descargado`,
             comment: `Descarga #${document.downloadsCount + 1} - Curso: ${document.course}`
           });
         } catch (auditError) {
-          // No fallar la respuesta si falla el registro de auditoría
           console.error('Error registrando descarga de documento oficial:', auditError);
         }
       }
@@ -1076,12 +1014,10 @@ class DocumentController {
 
       const unreadCount = await SharedDocument.countUnread(userId);
 
-      // Mapear documentos compartidos
       const documents = sharedDocuments
-        .filter(sd => sd.documentId) // Filtrar documentos que ya no existen
+        .filter(sd => sd.documentId)
         .map(sd => {
           const doc = sd.documentId.toObject();
-          // Obtener el usuario que compartió (sharedByUserId o sharedBy)
           const sharedBy = sd.sharedByUserId || sd.sharedBy || null;
           return {
             ...doc,
@@ -1107,7 +1043,6 @@ class DocumentController {
     }
   }
 
-  // Marcar documento compartido como leído
   static async markSharedDocumentAsRead(req, res, next) {
     try {
       const userId = req.user.userId;

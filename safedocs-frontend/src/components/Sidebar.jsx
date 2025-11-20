@@ -1,6 +1,3 @@
-// src/components/Sidebar.jsx
-// Barra lateral fija para navegación principal. Responsive con drawer en móviles.
-// Incluye acceso rápido a "Mis Documentos", scroll al formulario de subida y toggle de modo nocturno.
 import React, { useState, useEffect } from 'react'
 import { Upload, LogOut, LayoutGrid, Moon, X, Menu, Users, FileText, Share2 } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
@@ -14,7 +11,6 @@ function Sidebar({ cambiarVista, onGoToUpload, onGoToDocuments }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
-  // Detectar si estamos en móvil
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
@@ -31,13 +27,10 @@ function Sidebar({ cambiarVista, onGoToUpload, onGoToDocuments }) {
   const goDocuments = () => {
     setIsMobileMenuOpen(false)
     
-    // Si hay función para abrir documentos, ejecutarla directamente
-    // El Dashboard manejará si necesita cambiar la vista o no
     if (onGoToDocuments) {
       onGoToDocuments()
     }
     
-    // Si no hay función pero hay cambiarVista, cambiar a dashboard
     if (!onGoToDocuments && cambiarVista) {
       cambiarVista('dashboard')
     }
@@ -65,15 +58,12 @@ function Sidebar({ cambiarVista, onGoToUpload, onGoToDocuments }) {
   }
 
   const handleUpload = () => {
-    // Cerrar el menú móvil primero
     setIsMobileMenuOpen(false)
     
-    // Primero cambiar la vista si no estamos en dashboard
     if (cambiarVista) {
       cambiarVista('dashboard')
     }
     
-    // Luego hacer scroll después de un delay más largo para asegurar que el Dashboard se monte
     setTimeout(() => {
       if (onGoToUpload) {
         onGoToUpload()
@@ -180,11 +170,9 @@ function Sidebar({ cambiarVista, onGoToUpload, onGoToDocuments }) {
     </>
   )
 
-  // Versión móvil: drawer lateral
   if (isMobile) {
     return (
       <>
-        {/* Botón hamburguesa para abrir menú */}
         <button
           onClick={() => setIsMobileMenuOpen(true)}
           className="fixed top-4 left-4 z-50 p-3 rounded-lg bg-sky-400 text-white shadow-lg hover:bg-sky-500 active:bg-sky-600 transition-all duration-200 touch-manipulation min-h-[44px] min-w-[44px] focus:outline-none focus:ring-2 focus:ring-sky-300 focus:ring-offset-2"
@@ -193,7 +181,6 @@ function Sidebar({ cambiarVista, onGoToUpload, onGoToDocuments }) {
           <Menu className="w-6 h-6" />
         </button>
 
-        {/* Overlay oscuro */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
@@ -207,7 +194,6 @@ function Sidebar({ cambiarVista, onGoToUpload, onGoToDocuments }) {
                 aria-hidden="true"
               />
               
-              {/* Sidebar drawer */}
               <motion.aside
                 initial={{ x: -280 }}
                 animate={{ x: 0 }}
@@ -224,7 +210,6 @@ function Sidebar({ cambiarVista, onGoToUpload, onGoToDocuments }) {
     )
   }
 
-  // Versión desktop: sidebar fijo
   return (
     <aside className="fixed inset-y-0 left-0 w-52 bg-sky-400 text-white flex flex-col shadow-lg z-40">
       {sidebarContent}

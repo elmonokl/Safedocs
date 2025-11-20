@@ -30,7 +30,6 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
   const uploadRef = useRef(null)
   const docsRef = useRef(null)
 
-  // Límite de tamaño (cliente): 50MB
   const MAX_SIZE_BYTES = 50 * 1024 * 1024
   const ALLOWED_TYPES = new Set([
     'application/pdf',
@@ -52,7 +51,6 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
   const handleUpload = async (e) => {
     e.preventDefault()
 
-    // Validaciones cliente
     if (!title || !title.trim()) {
       showToast && showToast('El título es obligatorio', 'warning')
       return
@@ -113,18 +111,14 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
     showToast && showToast('Documento actualizado correctamente', 'success')
     await loadDocuments()
     setEditingDoc(null)
-    // Si el documento editado está abierto en el modal, actualizarlo
     if (selectedDoc && editingDoc && selectedDoc.id === editingDoc.id) {
-      // El modal se actualizará automáticamente cuando se recargue la lista
-      // ya que selectedDoc se actualiza cuando se recarga documents
+      setSelectedDoc(null)
     }
   }
 
   const scrollToUpload = () => {
-    // Pequeño delay para asegurar que el elemento esté renderizado
     setTimeout(() => {
       if (uploadRef.current) {
-        // Calcular posición con offset para el header
         const elementPosition = uploadRef.current.getBoundingClientRect().top
         const offsetPosition = elementPosition + window.pageYOffset - 20
         
@@ -133,13 +127,11 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
           behavior: 'smooth'
         })
         
-        // Resaltar el formulario con un efecto visual
         setUploadFormHighlighted(true)
         setTimeout(() => {
           setUploadFormHighlighted(false)
         }, 2000)
         
-        // Hacer focus en el primer campo del formulario para mejor UX
         setTimeout(() => {
           const titleInput = uploadRef.current?.querySelector('input[type="text"]')
           if (titleInput) {
@@ -297,12 +289,10 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
                     </button>
                     <button
                       onClick={async () => {
-                        // Obtener el documento completo para registrar visualización
                         const fullDoc = await getDocumentById(doc.id)
                         if (fullDoc) {
                           setSelectedDoc(fullDoc)
                         } else {
-                          // Si falla, usar el documento de la lista
                           setSelectedDoc(doc)
                         }
                       }}
@@ -330,7 +320,6 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
             onDocumentUpdated={async () => {
               await loadDocuments()
               showToast && showToast('Documento actualizado', 'success')
-              // El documento en el modal se actualizará automáticamente cuando documents cambie
             }}
             onDocumentDeleted={async () => {
               await loadDocuments()
@@ -364,7 +353,6 @@ function Dashboard({ cambiarVista, irADocumentos, showToast, showConfirmDialog }
           />
         )}
 
-        {/* Modal de Mis Documentos */}
         <MisDocumentosModal
           isOpen={showMisDocumentosModal}
           onClose={() => setShowMisDocumentosModal(false)}

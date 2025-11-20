@@ -8,11 +8,10 @@ import { useDocuments } from '../contexts/DocumentContext'
 function ShareQRModal({ documentId, shareUrl, onClose, onShareWithFriends }) {
   const canvasRef = useRef(null)
   const [copied, setCopied] = useState(false)
-  const [activeTab, setActiveTab] = useState('qr') // 'qr', 'friends'
+  const [activeTab, setActiveTab] = useState('qr')
   const [friends, setFriends] = useState([])
   const [loadingFriends, setLoadingFriends] = useState(false)
   const [selectedFriends, setSelectedFriends] = useState(() => {
-    // Inicializar con una función para asegurar que siempre es un array válido
     const initial = []
     console.log('Inicializando selectedFriends:', initial)
     return initial
@@ -25,7 +24,6 @@ function ShareQRModal({ documentId, shareUrl, onClose, onShareWithFriends }) {
   useEffect(() => {
     if (activeTab === 'qr' && shareUrl && canvasRef.current) {
       setQrError('')
-      // Pequeño delay para asegurar que el canvas esté completamente renderizado
       const timer = setTimeout(() => {
         if (canvasRef.current && shareUrl) {
           QRCode.toCanvas(canvasRef.current, shareUrl, { 
@@ -54,7 +52,6 @@ function ShareQRModal({ documentId, shareUrl, onClose, onShareWithFriends }) {
   useEffect(() => {
     if (activeTab === 'friends') {
       loadFriends()
-      // No resetear selectedFriends aquí, solo cuando se cierra el modal
     }
   }, [activeTab])
 
@@ -194,7 +191,6 @@ function ShareQRModal({ documentId, shareUrl, onClose, onShareWithFriends }) {
       
       console.log('toggleFriend: Selección validada final:', validatedSelection, 'length:', validatedSelection.length, 'tipo:', typeof validatedSelection, 'es array:', Array.isArray(validatedSelection))
       
-      // Retornar un nuevo array siempre (nunca mutar)
       return Array.from(validatedSelection)
     })
   }
@@ -202,9 +198,8 @@ function ShareQRModal({ documentId, shareUrl, onClose, onShareWithFriends }) {
   const handleShareWithFriends = async () => {
     console.log('handleShareWithFriends llamado:', { selectedFriends, selectedFriendsLength: selectedFriends.length })
     
-    // Normalizar y filtrar IDs válidos
     const validFriendIds = selectedFriends
-      .filter(id => id != null && id !== undefined) // Filtrar null/undefined primero
+      .filter(id => id != null && id !== undefined)
       .map(id => String(id).trim())
       .filter(id => id && id.length > 0 && id !== 'undefined' && id !== 'null' && id !== '')
     
@@ -223,7 +218,6 @@ function ShareQRModal({ documentId, shareUrl, onClose, onShareWithFriends }) {
 
     setSharing(true)
     try {
-      // Asegurar que los IDs sean strings consistentes
       const friendIds = validFriendIds
       console.log('Compartiendo documento con amigos:', { documentId, friendIds, message, selectedFriends, validFriendIds })
       
@@ -235,7 +229,6 @@ function ShareQRModal({ documentId, shareUrl, onClose, onShareWithFriends }) {
         onShareWithFriends && onShareWithFriends()
         onClose()
       } else {
-        // El error ya está manejado en shareWithFriends, solo mostrar mensaje genérico
         const errorMsg = 'Error al compartir con amigos. Verifica que el documento sea válido y que los usuarios seleccionados sean tus amigos.'
         alert(errorMsg)
       }
@@ -266,7 +259,6 @@ function ShareQRModal({ documentId, shareUrl, onClose, onShareWithFriends }) {
           </button>
         </div>
 
-        {/* Tabs */}
         <div className="flex border-b border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setActiveTab('qr')}
@@ -292,7 +284,6 @@ function ShareQRModal({ documentId, shareUrl, onClose, onShareWithFriends }) {
           </button>
         </div>
 
-        {/* Content */}
         <div className="p-6">
           {activeTab === 'qr' && (
             <div className="space-y-4 text-center">
@@ -364,16 +355,13 @@ function ShareQRModal({ documentId, shareUrl, onClose, onShareWithFriends }) {
                     <div className="p-4 text-center text-gray-500">No tienes amigos agregados</div>
                   ) : (
                     friends.map((friend) => {
-                      // El ID ya debería estar normalizado desde loadFriends
                       const friendIdStr = friend._id || friend.id
                       
-                      // Validar que tenemos un ID válido
                       if (!friendIdStr || friendIdStr === 'undefined' || friendIdStr === 'null' || friendIdStr === '') {
                         console.error('Amigo sin ID válido en render:', friend)
                         return null
                       }
                       
-                      // Normalizar selectedFriends para comparar correctamente
                       const normalizedSelected = selectedFriends
                         .filter(id => id != null && id !== undefined)
                         .map(id => String(id).trim())

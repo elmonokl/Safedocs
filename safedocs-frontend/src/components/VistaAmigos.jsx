@@ -1,4 +1,3 @@
-// src/components/VistaAmigos.jsx
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, UserPlus, UserCheck, XCircle, RefreshCcw, Trash2 } from 'lucide-react'
@@ -123,7 +122,7 @@ function VistaAmigos({ cambiarVista }) {
     `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4c51bf&color=fff`
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>

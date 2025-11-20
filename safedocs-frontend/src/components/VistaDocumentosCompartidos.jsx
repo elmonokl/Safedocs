@@ -1,4 +1,3 @@
-// src/components/VistaDocumentosCompartidos.jsx
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FileText, Download, Eye, Search, Filter, Calendar, User, Loader2, AlertCircle, Share2 } from 'lucide-react'
@@ -47,13 +46,11 @@ function VistaDocumentosCompartidos({ cambiarVista }) {
 
   const handleViewDocument = async (doc) => {
     setSelectedDoc(doc)
-    // Marcar como leído si no está leído
     if (!doc.isRead) {
       try {
         await apiFetch(`/api/documents/shared/${doc._id}/read`, {
           method: 'PATCH'
         })
-        // Actualizar el documento en la lista
         setDocuments(prev =>
           prev.map(d =>
             d._id === doc._id
@@ -155,7 +152,6 @@ function VistaDocumentosCompartidos({ cambiarVista }) {
           </div>
         </div>
 
-        {/* Buscador */}
         <div className="mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -169,7 +165,6 @@ function VistaDocumentosCompartidos({ cambiarVista }) {
           </div>
         </div>
 
-        {/* Lista de documentos */}
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
@@ -277,7 +272,6 @@ function VistaDocumentosCompartidos({ cambiarVista }) {
         )}
       </div>
 
-      {/* Modal de documento */}
       {selectedDoc && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedDoc(null)}>
           <motion.div

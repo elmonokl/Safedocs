@@ -1,4 +1,3 @@
-// src/components/EditDocumentModal.jsx
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Edit, X, Save } from 'lucide-react'
@@ -11,7 +10,6 @@ function EditDocumentModal({ documento, onClose, onSuccess }) {
   const [category, setCategory] = useState('')
   const [course, setCourse] = useState('')
 
-  // Mapeo de categorías del backend (inglés) al frontend (español)
   const mapCategoryFromBackend = (category) => {
     const mapping = {
       'academic': 'Apuntes',
@@ -41,11 +39,10 @@ function EditDocumentModal({ documento, onClose, onSuccess }) {
       return
     }
 
-    // Mapear categoría del frontend (español) al backend (acepta español y lo mapea internamente)
     const updateData = {
       title: title.trim(),
       description: description.trim(),
-      category: category, // El backend mapea automáticamente de español a inglés
+      category: category,
       course: course.trim()
     }
 

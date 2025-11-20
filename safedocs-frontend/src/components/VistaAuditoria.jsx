@@ -80,7 +80,6 @@ function VistaAuditoria({ cambiarVista }) {
           <button onClick={() => cambiarVista('dashboard')} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Volver</button>
         </div>
 
-        {/* Estadísticas */}
         {estadisticas && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white p-4 rounded-lg shadow">

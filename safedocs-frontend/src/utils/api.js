@@ -31,7 +31,6 @@ export async function apiFetch(path, { method = 'GET', body, headers = {} } = {}
   }
 
   if (!response.ok) {
-    // Manejo especial para errores de rate limiting
     if (response.status === 429) {
       const retryAfter = response.headers.get('Retry-After') || response.headers.get('X-RateLimit-Reset');
       const message = data?.message || 'Demasiadas solicitudes';
@@ -48,7 +47,7 @@ export async function apiFetch(path, { method = 'GET', body, headers = {} } = {}
     const error = new Error(message);
     error.status = response.status;
     error.statusText = response.statusText;
-    error.response = data; // Incluir la respuesta completa para acceder a los errores de validación
+    error.response = data;
     console.error('Error en apiFetch:', {
       status: response.status,
       statusText: response.statusText,

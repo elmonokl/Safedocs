@@ -1,11 +1,6 @@
 const AuditLog = require('../models/AuditLog');
 
-/**
- * Controlador de Auditoría
- * Gestiona todos los registros de actividad del sistema
- */
 class AuditController {
-  // Obtener todos los registros de auditoría con filtros y paginación
   static async getAllAuditLogs(req, res) {
     try {
       const { page = 1, limit = 50, action, actorId, documentId } = req.query;
@@ -63,7 +58,6 @@ class AuditController {
     }
   }
 
-  // Obtener estadísticas agregadas de acciones de auditoría
   static async getAuditStats(req, res) {
     try {
       const stats = await AuditLog.aggregate([
@@ -113,7 +107,6 @@ class AuditController {
     }
   }
 
-  // Obtener eventos de auditoría del usuario autenticado
   static async getMyAuditLogs(req, res) {
     try {
       const { userId } = req.user;
@@ -160,7 +153,6 @@ class AuditController {
     }
   }
 
-  // Obtener visualizaciones de los documentos del usuario autenticado
   static async getDocumentViews(req, res) {
     try {
       const { userId } = req.user;
@@ -170,17 +162,14 @@ class AuditController {
       const numericPage = Math.max(parseInt(page, 10) || 1, 1);
       const daysAgo = Math.max(parseInt(days, 10) || 30, 1);
       
-      // Fecha límite: días atrás desde ahora
       const dateLimit = new Date();
       dateLimit.setDate(dateLimit.getDate() - daysAgo);
 
-      // Filtrar solo visualizaciones (action: 'view') de documentos del usuario
-      // y excluir visualizaciones del propio usuario
       const filter = {
-        userId: userId, // Documentos del usuario autenticado
-        action: 'view', // Solo visualizaciones
-        createdAt: { $gte: dateLimit }, // Últimos N días
-        actorId: { $ne: userId } // Excluir visualizaciones propias
+        userId: userId,
+        action: 'view',
+        createdAt: { $gte: dateLimit },
+        actorId: { $ne: userId }
       };
 
       const [views, total] = await Promise.all([
@@ -193,7 +182,6 @@ class AuditController {
         AuditLog.countDocuments(filter),
       ]);
 
-      // Agrupar por documento para mostrar mejor la información
       const viewsByDocument = {};
       views.forEach(view => {
         const docId = view.documentId?._id?.toString() || 'unknown';
@@ -222,7 +210,6 @@ class AuditController {
         });
       });
 
-      // Convertir objeto a array y ordenar por última visualización
       const documentsWithViews = Object.values(viewsByDocument).sort((a, b) => {
         const lastViewA = a.views[0]?.viewedAt || new Date(0);
         const lastViewB = b.views[0]?.viewedAt || new Date(0);

@@ -6,21 +6,13 @@ const AuditLog = require('../models/AuditLog');
 const jwt = require('jsonwebtoken');
 const fs = require('fs').promises;
 const path = require('path');
-// Validaciones ya son manejadas en rutas con handleValidationErrors
 
-/**
- * Controlador de Autenticación
- * Gestiona registro, login, perfil, logout y verificación de token.
- * Las validaciones se realizan en rutas; los errores se delegan al middleware global.
- */
 class AuthController {
-  // Registro de usuario
   static async register(req, res, next) {
     try {
 
       const { name, email, password, career, role } = req.body;
 
-      // Verificar si el email ya existe
       const existingUser = await User.findByEmail(email);
       if (existingUser) {
         return res.status(400).json({
@@ -29,7 +21,6 @@ class AuthController {
         });
       }
 
-      // Validar correo institucional
       if (!email.endsWith('@unab.cl')) {
         return res.status(400).json({
           success: false,
@@ -37,7 +28,6 @@ class AuthController {
         });
       }
 
-      // Validar contraseña
       if (password.length < 6) {
         return res.status(400).json({
           success: false,
@@ -45,11 +35,9 @@ class AuthController {
         });
       }
 
-      // Validar rol
       const validRoles = ['student', 'professor', 'admin'];
       const userRole = role && validRoles.includes(role) ? role : 'student';
 
-      // Crear usuario
       const userData = {
         name,
         email,
@@ -60,14 +48,12 @@ class AuthController {
 
       const newUser = await User.create(userData);
 
-      // Generar token JWT
       const token = jwt.sign(
         { userId: newUser._id, email: newUser.email },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
       );
 
-      // Respuesta exitosa
       res.status(201).json({
         success: true,
         message: 'Usuario registrado exitosamente',
@@ -82,13 +68,11 @@ class AuthController {
     }
   }
 
-  // Login de usuario
   static async login(req, res, next) {
     try {
 
       const { email, password } = req.body;
 
-      // Buscar usuario por email
       const user = await User.findByEmail(email);
       if (!user) {
         return res.status(401).json({
@@ -97,7 +81,6 @@ class AuthController {
         });
       }
 
-      // Verificar contraseña
       const isValidPassword = await user.verifyPassword(password);
       if (!isValidPassword) {
         return res.status(401).json({
@@ -106,17 +89,14 @@ class AuthController {
         });
       }
 
-      // Actualizar último acceso
       await user.updateLastSeen();
 
-      // Generar token JWT
       const token = jwt.sign(
         { userId: user._id, email: user.email },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
       );
 
-      // Respuesta exitosa
       res.json({
         success: true,
         message: 'Login exitoso',
@@ -131,7 +111,6 @@ class AuthController {
     }
   }
 
-  // Obtener perfil del usuario actual
   static async getProfile(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -156,14 +135,12 @@ class AuthController {
     }
   }
 
-  // Actualizar perfil de usuario
   static async updateProfile(req, res, next) {
     try {
 
       const userId = req.user.userId;
       const { name, career, profilePicture } = req.body;
 
-      // Validar que al menos un campo se actualice
       if (!name && !career && !profilePicture) {
         return res.status(400).json({
           success: false,
@@ -202,12 +179,10 @@ class AuthController {
     }
   }
 
-  // Logout de usuario
   static async logout(req, res, next) {
     try {
       const userId = req.user.userId;
       
-      // Marcar usuario como offline
       await User.findByIdAndUpdate(userId, {
         isOnline: false,
         lastSeen: new Date()
@@ -223,7 +198,6 @@ class AuthController {
     }
   }
 
-  // Verificar token
   static async verifyToken(req, res, next) {
     try {
       const userId = req.user.userId;
@@ -248,13 +222,11 @@ class AuthController {
     }
   }
 
-  // Cambiar contraseña
   static async changePassword(req, res, next) {
     try {
       const userId = req.user.userId;
       const { currentPassword, newPassword } = req.body;
 
-      // Buscar usuario
       const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({
@@ -263,7 +235,6 @@ class AuthController {
         });
       }
 
-      // Verificar contraseña actual
       const isValidPassword = await user.verifyPassword(currentPassword);
       if (!isValidPassword) {
         return res.status(400).json({
@@ -272,7 +243,6 @@ class AuthController {
         });
       }
 
-      // Actualizar contraseña
       user.password = newPassword;
       await user.save();
 
@@ -286,12 +256,10 @@ class AuthController {
     }
   }
 
-  // Solicitar restablecimiento de contraseña
   static async forgotPassword(req, res, next) {
     try {
       const { email } = req.body;
 
-      // Buscar usuario
       const user = await User.findByEmail(email);
       if (!user) {
         return res.status(404).json({
@@ -300,8 +268,6 @@ class AuthController {
         });
       }
 
-      // En un entorno real, aquí enviarías un email con un token de restablecimiento
-      // Por ahora, solo devolvemos un mensaje genérico
       res.json({
         success: true,
         message: 'Si el email existe, recibirás instrucciones para restablecer tu contraseña'
@@ -312,13 +278,10 @@ class AuthController {
     }
   }
 
-  // Restablecer contraseña
   static async resetPassword(req, res, next) {
     try {
       const { token, newPassword } = req.body;
 
-      // En un entorno real, aquí verificarías el token y actualizarías la contraseña
-      // Por ahora, solo devolvemos un mensaje genérico
       res.json({
         success: true,
         message: 'Contraseña restablecida exitosamente'
@@ -329,13 +292,11 @@ class AuthController {
     }
   }
 
-  // Eliminar cuenta de usuario
   static async deleteAccount(req, res, next) {
     try {
       const userId = req.user.userId;
       const { confirmation } = req.body;
 
-      // Verificar que se proporcionó la confirmación
       if (!confirmation || confirmation !== 'ELIMINAR') {
         return res.status(400).json({
           success: false,
@@ -343,7 +304,6 @@ class AuthController {
         });
       }
 
-      // Buscar usuario
       const user = await User.findById(userId);
       if (!user) {
         return res.status(404).json({
@@ -352,23 +312,19 @@ class AuthController {
         });
       }
 
-      // Eliminar todas las relaciones en paralelo
       await Promise.all([
-        // Eliminar amistades (donde el usuario es user1Id o user2Id)
         Friendship.deleteMany({
           $or: [
             { user1Id: userId },
             { user2Id: userId }
           ]
         }),
-        // Eliminar solicitudes de amistad (donde el usuario es senderId o receiverId)
         FriendRequest.deleteMany({
           $or: [
             { senderId: userId },
             { receiverId: userId }
           ]
         }),
-        // Eliminar registros de auditoría (donde el usuario es userId o actorId)
         AuditLog.deleteMany({
           $or: [
             { userId: userId },
@@ -377,29 +333,23 @@ class AuthController {
         })
       ]);
 
-      // Obtener todos los documentos del usuario antes de eliminarlos
       const documents = await Document.find({ userId: userId });
       
-      // Eliminar archivos físicos de los documentos
       const deletePromises = documents.map(async (doc) => {
         try {
           if (doc.filePath) {
-            // El filePath ya es la ruta completa desde el middleware de upload
             await fs.unlink(doc.filePath).catch(() => {
-              // Ignorar errores si el archivo no existe
+              console.error(`Error eliminando archivo ${doc.filePath}`);
             });
           }
         } catch (error) {
           console.error(`Error eliminando archivo ${doc.filePath}:`, error);
-          // Continuar incluso si hay errores al eliminar archivos
         }
       });
       await Promise.all(deletePromises);
 
-      // Eliminar documentos de la base de datos
       await Document.deleteMany({ userId: userId });
 
-      // Finalmente, eliminar el usuario
       await User.findByIdAndDelete(userId);
 
       res.json({

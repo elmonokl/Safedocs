@@ -15,7 +15,6 @@ const Toast = ({ message, type = 'success', onClose, duration = 5000 }) => {
     warning: 'border-yellow-200 bg-yellow-50 text-yellow-800'
   }
 
-  // Auto-close después del tiempo especificado
   React.useEffect(() => {
     if (duration) {
       const timer = setTimeout(onClose, duration)

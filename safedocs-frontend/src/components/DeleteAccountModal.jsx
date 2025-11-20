@@ -15,7 +15,6 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm, loading, error: extern
     onConfirm(confirmation)
   }
 
-  // Limpiar error cuando se cierra el modal
   useEffect(() => {
     if (!isOpen) {
       setConfirmation('')

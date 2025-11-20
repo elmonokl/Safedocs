@@ -40,7 +40,6 @@ function VistaDocumentosOficiales({ cambiarVista }) {
 
   const handleView = async (docId) => {
     try {
-      // Obtener el documento para registrar visualización
       const resp = await apiFetch(`/api/documents/official/${docId}`)
       if (resp?.success && resp?.data?.document) {
         setSelectedDoc(resp.data.document)
@@ -80,7 +79,6 @@ function VistaDocumentosOficiales({ cambiarVista }) {
       document.body.removeChild(link)
       window.URL.revokeObjectURL(blobUrl)
       
-      // Recargar documentos para actualizar contador de descargas
       await loadDocuments()
     } catch (err) {
       console.error('Error descargando documento:', err)
@@ -112,7 +110,6 @@ function VistaDocumentosOficiales({ cambiarVista }) {
   const defaultAvatar = (name = '') =>
     `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4c51bf&color=fff`
 
-  // Obtener lista única de profesores de los documentos
   const uniqueProfessors = [...new Set(
     documents
       .map(doc => doc.author?.name)
@@ -148,7 +145,6 @@ function VistaDocumentosOficiales({ cambiarVista }) {
           )}
         </div>
 
-        {/* Filtros y búsqueda */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow border p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="relative">
@@ -282,7 +278,6 @@ function VistaDocumentosOficiales({ cambiarVista }) {
         )}
       </div>
 
-      {/* Modal de documento */}
       {selectedDoc && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <motion.div

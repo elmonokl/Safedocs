@@ -12,7 +12,6 @@ function Notifications({ cambiarVista }) {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
 
-  // Cerrar dropdown al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -29,7 +28,6 @@ function Notifications({ cambiarVista }) {
     }
   }, [isOpen])
 
-  // Cargar notificaciones
   const loadNotifications = async () => {
     if (!user) return
 
@@ -47,7 +45,6 @@ function Notifications({ cambiarVista }) {
     }
   }
 
-  // Cargar contador de no leídas
   const loadUnreadCount = async () => {
     if (!user) return
 
@@ -61,30 +58,26 @@ function Notifications({ cambiarVista }) {
     }
   }
 
-  // Cargar notificaciones cuando se abre el dropdown
   useEffect(() => {
     if (isOpen) {
       loadNotifications()
     }
   }, [isOpen])
 
-  // Cargar contador inicial y cada 30 segundos
   useEffect(() => {
     if (user) {
       loadUnreadCount()
-      const interval = setInterval(loadUnreadCount, 30000) // Cada 30 segundos
+      const interval = setInterval(loadUnreadCount, 30000)
       return () => clearInterval(interval)
     }
   }, [user])
 
-  // Marcar como leída
   const markAsRead = async (notificationId) => {
     try {
       const resp = await apiFetch(`/api/notifications/${notificationId}/read`, {
         method: 'PATCH'
       })
       if (resp?.success) {
-        // Actualizar estado local
         setNotifications(prev =>
           prev.map(notif =>
             notif._id === notificationId
@@ -99,7 +92,6 @@ function Notifications({ cambiarVista }) {
     }
   }
 
-  // Marcar todas como leídas
   const markAllAsRead = async () => {
     try {
       const resp = await apiFetch('/api/notifications/read-all', {
@@ -117,16 +109,13 @@ function Notifications({ cambiarVista }) {
     }
   }
 
-  // Manejar click en notificación
   const handleNotificationClick = async (notification) => {
     if (!notification.isRead) {
       await markAsRead(notification._id)
     }
 
-    // Cerrar dropdown
     setIsOpen(false)
 
-    // Navegar según el tipo de notificación
     if (notification.type === 'friend_request' && cambiarVista) {
       cambiarVista('amigos')
     } else if (notification.type === 'official_document' && cambiarVista) {
@@ -134,7 +123,6 @@ function Notifications({ cambiarVista }) {
     }
   }
 
-  // Obtener ícono según el tipo
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'friend_request':
@@ -146,7 +134,6 @@ function Notifications({ cambiarVista }) {
     }
   }
 
-  // Obtener color según el tipo
   const getNotificationColor = (type) => {
     switch (type) {
       case 'friend_request':
@@ -158,7 +145,6 @@ function Notifications({ cambiarVista }) {
     }
   }
 
-  // Formatear fecha
   const formatDate = (date) => {
     if (!date) return ''
     const now = new Date()
@@ -193,11 +179,9 @@ function Notifications({ cambiarVista }) {
         )}
       </button>
 
-      {/* Dropdown de notificaciones */}
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Overlay para móviles */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -206,7 +190,6 @@ function Notifications({ cambiarVista }) {
               onClick={() => setIsOpen(false)}
             />
 
-            {/* Dropdown */}
             <motion.div
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -214,7 +197,6 @@ function Notifications({ cambiarVista }) {
               transition={{ duration: 0.2 }}
               className="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden flex flex-col"
             >
-              {/* Header */}
               <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-purple-50/50">
                 <h3 className="text-sm font-semibold text-sky-600">Notificaciones</h3>
                 <button
@@ -226,7 +208,6 @@ function Notifications({ cambiarVista }) {
                 </button>
               </div>
 
-              {/* Lista de notificaciones */}
               <div className="flex-1 overflow-y-auto">
                 {loading ? (
                   <div className="px-4 py-8 text-center">
@@ -249,7 +230,6 @@ function Notifications({ cambiarVista }) {
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          {/* Ícono */}
                           <div
                             className={`p-2 rounded-lg border flex-shrink-0 ${getNotificationColor(
                               notification.type
@@ -258,7 +238,6 @@ function Notifications({ cambiarVista }) {
                             {getNotificationIcon(notification.type)}
                           </div>
 
-                          {/* Contenido */}
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate">
                               {notification.title}
@@ -271,7 +250,6 @@ function Notifications({ cambiarVista }) {
                             </p>
                           </div>
 
-                          {/* Indicador de no leída */}
                           {!notification.isRead && (
                             <div className="flex-shrink-0 w-2 h-2 bg-pink-300 rounded-full mt-2"></div>
                           )}
@@ -282,7 +260,6 @@ function Notifications({ cambiarVista }) {
                 )}
               </div>
 
-              {/* Footer */}
               {notifications.length > 0 && (
                 <div className="px-4 py-2 border-t border-gray-200 bg-purple-50/50 flex items-center justify-between gap-2">
                   <button

@@ -4,7 +4,6 @@ import BotonesInicio from '../components/BotonesInicio'
 function Hero({ cambiarVista }) {
   return (
     <section className="relative flex flex-col items-center justify-center text-center mt-20 px-4 min-h-[60vh] overflow-hidden">
-      {/* Fondo gradiente animado */}
       <motion.div
         className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-200 via-blue-400 to-red-600 opacity-80 animate-gradient-move"
         initial={{ opacity: 0 }}

@@ -45,7 +45,6 @@ function AddFriendModal({ isOpen, onClose, onSent }) {
       setSuggestions(resp?.data?.users || [])
     } catch (e) {
       console.error('Error cargando sugerencias:', e)
-      // No mostrar error si falla cargar sugerencias, solo no mostrar nada
     } finally {
       setLoadingSuggestions(false)
     }
@@ -70,7 +69,6 @@ function AddFriendModal({ isOpen, onClose, onSent }) {
     }
   }, [q])
 
-  // Cargar sugerencias cuando se abre el modal
   useEffect(() => {
     if (!isOpen) {
       setQ(''); setResults([]); setSuggestions([]); setError('')
@@ -79,12 +77,11 @@ function AddFriendModal({ isOpen, onClose, onSent }) {
     }
   }, [isOpen, loadSuggestions])
 
-  // Buscar automáticamente cuando el usuario escribe (con debounce)
   useEffect(() => {
     if (q.trim().length >= 2) {
       const timeoutId = setTimeout(() => {
         search()
-      }, 500) // Esperar 500ms después de que el usuario deje de escribir
+      }, 500)
       return () => clearTimeout(timeoutId)
     } else {
       setResults([])
@@ -96,7 +93,6 @@ function AddFriendModal({ isOpen, onClose, onSent }) {
     try {
       await apiFetch('/api/friends/request', { method: 'POST', body: { receiverId: userId } })
       onSent?.()
-      // Recargar sugerencias y resultados de búsqueda
       await Promise.all([
         loadSuggestions(),
         q.trim().length >= 2 ? search() : Promise.resolve()
@@ -127,7 +123,6 @@ function AddFriendModal({ isOpen, onClose, onSent }) {
         </div>
         {error && <p className="text-sm text-red-600 mb-2">{error}</p>}
         
-        {/* Mostrar resultados de búsqueda si hay búsqueda activa */}
         {q.trim().length >= 2 ? (
           <div className="max-h-64 overflow-auto space-y-2">
             {loading ? (
@@ -155,7 +150,6 @@ function AddFriendModal({ isOpen, onClose, onSent }) {
             )}
           </div>
         ) : (
-          /* Mostrar sugerencias cuando no hay búsqueda activa */
           <div className="max-h-64 overflow-auto space-y-2">
             {loadingSuggestions ? (
               <p className="text-sm text-gray-500">Cargando sugerencias...</p>

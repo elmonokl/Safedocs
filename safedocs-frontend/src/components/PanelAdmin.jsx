@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
-// PanelAdmin: gestión de usuarios, documentos reportados y métricas del sistema
 function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
   const [activeTab, setActiveTab] = useState('stats');
   const [stats, setStats] = useState(null);
@@ -25,7 +24,6 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0 });
 
-  // Tabs disponibles
   const tabs = [
     { id: 'stats', label: 'Estadísticas', icon: BarChart3 },
     { id: 'users', label: 'Usuarios', icon: Users },
@@ -33,7 +31,6 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
     { id: 'settings', label: 'Configuración', icon: Settings }
   ];
 
-  // Cargar estadísticas del sistema
   const loadStats = async () => {
     try {
       setLoading(true);
@@ -46,7 +43,6 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
     }
   };
 
-  // Cargar usuarios
   const loadUsers = async (page = 1) => {
     try {
       setLoading(true);
@@ -60,7 +56,6 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
     }
   };
 
-  // Cargar documentos reportados
   const loadReportedDocs = async () => {
     try {
       setLoading(true);
@@ -73,7 +68,6 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
     }
   };
 
-  // Cambiar rol de usuario
   const changeUserRole = async (userId, newRole) => {
     try {
       await apiFetch(`/api/admin/users/${userId}/role`, { method: 'PUT', body: { newRole } });
@@ -84,7 +78,6 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
     }
   };
 
-  // Cambiar estado de usuario
   const toggleUserStatus = async (userId, isActive) => {
     try {
       await apiFetch(`/api/admin/users/${userId}/status`, { method: 'PUT', body: { isActive } });
@@ -95,7 +88,6 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
     }
   };
 
-  // Eliminar documento como admin
   const deleteDocumentAsAdmin = async (documentId, reason) => {
     try {
       await apiFetch(`/api/admin/documents/${documentId}`, { method: 'DELETE', body: { reason } });
@@ -106,7 +98,6 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
     }
   };
 
-  // Cargar datos según la pestaña activa
   useEffect(() => {
     if (activeTab === 'stats') {
       loadStats();
@@ -117,7 +108,6 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
     }
   }, [activeTab]);
 
-  // Renderizar estadísticas
   const renderStats = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {stats?.users?.map((stat, index) => (
@@ -262,7 +252,6 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
     </div>
   );
 
-  // Renderizar documentos reportados
   const renderDocuments = () => (
     <div className="bg-white rounded-lg shadow-md">
       <div className="px-6 py-4 border-b border-gray-200">
@@ -318,7 +307,6 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
@@ -337,7 +325,6 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tabs */}
         <div className="border-b border-gray-200 mb-8">
           <nav className="-mb-px flex space-x-8">
             {tabs.map((tab) => {
@@ -360,14 +347,12 @@ function PanelAdmin({ cambiarVista, showToast, showConfirmDialog }) {
           </nav>
         </div>
 
-        {/* Loading */}
         {loading && (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
           </div>
         )}
 
-        {/* Content */}
         {!loading && (
           <motion.div
             key={activeTab}

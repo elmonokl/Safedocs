@@ -172,7 +172,6 @@ const documentValidations = {
   ]
 };
 
-// Validaciones para amigos
 const friendsValidations = {
   searchUsers: [
     query('q')
@@ -223,7 +222,6 @@ const friendsValidations = {
     
     body('friendIds.*')
       .custom((value) => {
-        // Validar que sea un string y un MongoId válido
         if (typeof value !== 'string') {
           throw new Error('Cada ID de amigo debe ser una cadena de texto');
         }
