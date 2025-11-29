@@ -2,9 +2,9 @@ import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useDocuments } from '../contexts/DocumentContext'
 import { Download, Calendar, User, FileText, X, Edit, Trash2, Share2 } from 'lucide-react'
-import EditDocumentModal from './EditDocumentModal'
-import ConfirmDialog from './ConfirmDialog'
-import ShareQRModal from './ShareQRModal'
+import ModalEditarDocumento from './EditDocumentModal'
+import DialogoConfirmacion from './ConfirmDialog'
+import ModalCompartirQR from './ShareQRModal'
 
 function ModalDocumento({ documento, onClose, onDocumentUpdated, onDocumentDeleted }) {
   const { downloadDocument, deleteDocument, generateShareLink, error } = useDocuments()
@@ -198,14 +198,14 @@ function ModalDocumento({ documento, onClose, onDocumentUpdated, onDocumentDelet
       </motion.div>
 
       {showEditModal && (
-        <EditDocumentModal
+        <ModalEditarDocumento
           documento={documento}
           onClose={() => setShowEditModal(false)}
           onSuccess={handleEditSuccess}
         />
       )}
 
-      <ConfirmDialog
+      <DialogoConfirmacion
         isOpen={showDeleteConfirm}
         onClose={() => {
           setShowDeleteConfirm(false)
@@ -223,7 +223,7 @@ function ModalDocumento({ documento, onClose, onDocumentUpdated, onDocumentDelet
       />
 
       {showShareModal && (
-        <ShareQRModal
+        <ModalCompartirQR
           documentId={documento.id}
           shareUrl={shareUrl}
           onClose={() => {

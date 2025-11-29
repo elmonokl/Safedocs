@@ -14,7 +14,7 @@ function Registro({ cambiarVista, showToast }) {
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const { register, loading, clearError } = useAuth()
+  const { register, loading, error: authError, clearError } = useAuth()
 
   const handleChange = (e) => {
     setFormData(prev => ({
@@ -44,12 +44,14 @@ function Registro({ cambiarVista, showToast }) {
         showToast('¡Registro exitoso! Bienvenido a SafeDocs', 'success')
         cambiarVista('dashboard')
       } else {
-        const errorMessage = 'Error en el registro. Verifica que todos los campos sean correctos.'
+        // Mostrar el error específico del contexto si está disponible
+        const errorMessage = authError || 'Error en el registro. Verifica que todos los campos sean correctos.'
         showToast(errorMessage, 'error')
       }
     } catch (error) {
       console.error('Error en el registro:', error)
-      showToast('Error en el registro. Intenta nuevamente.', 'error')
+      const errorMessage = error.message || authError || 'Error en el registro. Intenta nuevamente.'
+      showToast(errorMessage, 'error')
     }
   }
 

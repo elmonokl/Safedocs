@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Users, UserPlus, UserCheck, XCircle, RefreshCcw, Trash2 } from 'lucide-react'
-import AddFriendModal from './AddFriendModal'
-import FriendProfileModal from './FriendProfileModal'
+import ModalAgregarAmigo from './AddFriendModal'
+import ModalPerfilAmigo from './FriendProfileModal'
 import { apiFetch } from '../utils/api'
 
 function VistaAmigos({ cambiarVista }) {
@@ -122,31 +122,33 @@ function VistaAmigos({ cambiarVista }) {
     `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4c51bf&color=fff`
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
             <button
               onClick={() => cambiarVista('dashboard')}
-              className="text-sm text-blue-600 hover:text-blue-800"
+              className="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors mb-2"
             >
               ← Volver al panel
             </button>
-            <h1 className="text-3xl font-bold text-blue-800 mt-2 flex items-center gap-2">
-              <Users className="w-7 h-7 text-blue-500" />
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-800 to-indigo-800 dark:from-blue-300 dark:to-indigo-300 bg-clip-text text-transparent mt-2 flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-md">
+                <Users className="w-7 h-7 text-white" />
+              </div>
               Mis Amigos
             </h1>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
               Gestiona tus solicitudes y comparte tus documentos con confianza.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <button
               onClick={() => {
                 loadFriends()
                 loadPendingRequests()
               }}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 transition"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow font-medium"
               title="Actualizar"
             >
               <RefreshCcw className="w-4 h-4" />
@@ -154,28 +156,32 @@ function VistaAmigos({ cambiarVista }) {
             </button>
             <button
               onClick={() => setShowAdd(true)}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition shadow"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95 font-medium"
             >
-              <UserPlus className="w-4 h-4" />
+              <UserPlus className="w-5 h-5" />
               Agregar amigo
             </button>
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-md border border-red-200 bg-red-50 text-sm text-red-700">
+          <div className="mb-6 p-4 rounded-xl border-2 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-sm text-red-700 dark:text-red-400 shadow-sm">
             {error}
           </div>
         )}
 
         <div className="grid gap-6 md:grid-cols-2">
-          <section className="bg-white rounded-xl shadow border p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-blue-700 flex items-center gap-2">
-                <UserCheck className="w-5 h-5" />
-                Solicitudes pendientes
-              </h2>
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+          <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border dark:border-gray-700 p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900/40 dark:to-amber-900/40 rounded-lg">
+                  <UserCheck className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">
+                  Solicitudes pendientes
+                </h2>
+              </div>
+              <span className="px-3 py-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-bold rounded-full shadow-sm">
                 {pendingRequests.length}
               </span>
             </div>
@@ -192,24 +198,26 @@ function VistaAmigos({ cambiarVista }) {
                       pendingRequests.map((request) => (
                         <motion.div
                           key={request._id}
-                          className="flex items-center justify-between border rounded-lg px-4 py-3 hover:bg-blue-50/50 transition"
+                          className="flex items-center justify-between border-2 border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 dark:hover:from-gray-700/50 dark:hover:to-gray-700/30 transition-all duration-200 hover:shadow-md hover:scale-[1.01]"
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
                         >
-                          <div className="flex items-center gap-3">
-                            <img
-                              src={request.sender?.profilePicture || defaultAvatar(request.sender?.name)}
-                              alt={request.sender?.name}
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
+                          <div className="flex items-center gap-4">
+                            <div className="relative">
+                              <img
+                                src={request.sender?.profilePicture || defaultAvatar(request.sender?.name)}
+                                alt={request.sender?.name}
+                                className="w-12 h-12 rounded-full object-cover border-2 border-blue-200 dark:border-blue-700 shadow-sm"
+                              />
+                            </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-800">
+                              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
                                 {request.sender?.name}
                               </p>
-                              <p className="text-xs text-gray-500">{request.sender?.email}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-400">{request.sender?.email}</p>
                               {request.sender?.career && (
-                                <p className="text-xs text-gray-400">{request.sender.career}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-500">{request.sender.career}</p>
                               )}
                             </div>
                           </div>
@@ -217,14 +225,14 @@ function VistaAmigos({ cambiarVista }) {
                             <button
                               onClick={() => handleReject(request._id)}
                               disabled={processingRequest === request._id}
-                              className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-60"
+                              className="px-3 py-2 rounded-lg border-2 border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-60 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm"
                             >
                               <XCircle className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleAccept(request._id)}
                               disabled={processingRequest === request._id}
-                              className="px-3 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-60"
+                              className="px-4 py-2 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 disabled:opacity-60 transition-all duration-200 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg font-medium"
                             >
                               Aceptar
                             </button>
@@ -236,13 +244,17 @@ function VistaAmigos({ cambiarVista }) {
             </div>
           </section>
 
-          <section className="bg-white rounded-xl shadow border p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-blue-700 flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Amigos
-              </h2>
-              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+          <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border dark:border-gray-700 p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-lg">
+                  <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">
+                  Amigos
+                </h2>
+              </div>
+              <span className="px-3 py-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs font-bold rounded-full shadow-sm">
                 {friends.length}
               </span>
             </div>
@@ -259,7 +271,7 @@ function VistaAmigos({ cambiarVista }) {
                       friends.map((friend) => (
                         <motion.div
                           key={friend._id}
-                          className="flex items-center justify-between border rounded-lg px-4 py-3 hover:bg-blue-50 transition"
+                          className="flex items-center justify-between border-2 border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-indigo-50/50 dark:hover:from-gray-700/50 dark:hover:to-gray-700/30 transition-all duration-200 hover:shadow-md hover:scale-[1.01]"
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
@@ -268,21 +280,26 @@ function VistaAmigos({ cambiarVista }) {
                             onClick={() => setSelectedFriend(friend)}
                             className="flex-1 flex items-center justify-between text-left"
                           >
-                            <div className="flex items-center gap-3">
-                              <img
-                                src={friend.profilePicture || defaultAvatar(friend.name)}
-                                alt={friend.name}
-                                className="w-10 h-10 rounded-full object-cover"
-                              />
+                            <div className="flex items-center gap-4">
+                              <div className="relative">
+                                <img
+                                  src={friend.profilePicture || defaultAvatar(friend.name)}
+                                  alt={friend.name}
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-blue-200 dark:border-blue-700 shadow-sm"
+                                />
+                                {friend.isOnline && (
+                                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white dark:border-gray-800 rounded-full"></span>
+                                )}
+                              </div>
                               <div>
-                                <p className="text-sm font-semibold text-gray-800">{friend.name}</p>
-                                <p className="text-xs text-gray-500">{friend.email}</p>
+                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{friend.name}</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400">{friend.email}</p>
                                 {friend.career && (
-                                  <p className="text-xs text-gray-400">{friend.career}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-500">{friend.career}</p>
                                 )}
                               </div>
                             </div>
-                            <span className={`text-xs font-medium ${friend.isOnline ? 'text-green-600' : 'text-gray-400'}`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${friend.isOnline ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
                               {friend.isOnline ? 'En línea' : 'Desconectado'}
                             </span>
                           </button>
@@ -291,7 +308,7 @@ function VistaAmigos({ cambiarVista }) {
                               e.stopPropagation()
                               handleRemoveFriend(friend._id, friend.name)
                             }}
-                            className="ml-3 p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
+                            className="ml-3 p-2.5 rounded-lg text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200 hover:scale-110 active:scale-95 shadow-sm"
                             title="Eliminar amigo"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -305,13 +322,13 @@ function VistaAmigos({ cambiarVista }) {
         </div>
       </div>
 
-      <AddFriendModal
+      <ModalAgregarAmigo
         isOpen={showAdd}
         onClose={() => setShowAdd(false)}
         onSent={onFriendAdded}
       />
 
-      <FriendProfileModal
+      <ModalPerfilAmigo
         friend={selectedFriend}
         onClose={() => setSelectedFriend(null)}
         onRemoveFriend={loadFriends}

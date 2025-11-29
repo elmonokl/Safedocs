@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Trash2, X } from 'lucide-react'
 import { apiFetch } from '../utils/api'
 
-function FriendProfileModal({ friend, onClose, onRemoveFriend }) {
+function ModalPerfilAmigo({ friend, onClose, onRemoveFriend }) {
   if (!friend) return null
 
   const avatar = friend.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(friend.name || 'A')}`
@@ -72,6 +72,6 @@ function FriendProfileModal({ friend, onClose, onRemoveFriend }) {
   )
 }
 
-export default FriendProfileModal
+export default ModalPerfilAmigo
 
 

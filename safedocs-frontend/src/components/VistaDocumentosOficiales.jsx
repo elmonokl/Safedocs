@@ -7,17 +7,24 @@ import { useAuth } from '../contexts/AuthContext'
 function VistaDocumentosOficiales({ cambiarVista }) {
   const { user } = useAuth()
   const isProfessor = user?.role === 'professor'
+  const [allDocuments, setAllDocuments] = useState([])
   const [documents, setDocuments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterProfessor, setFilterProfessor] = useState('')
+  const [filterCategory, setFilterCategory] = useState('')
+  const [filterCourse, setFilterCourse] = useState('')
   const [selectedDoc, setSelectedDoc] = useState(null)
   const [downloading, setDownloading] = useState(null)
 
   useEffect(() => {
     loadDocuments()
   }, [searchTerm, filterProfessor])
+
+  useEffect(() => {
+    filterDocuments()
+  }, [allDocuments, filterCategory, filterCourse])
 
   const loadDocuments = async () => {
     setLoading(true)
@@ -29,13 +36,27 @@ function VistaDocumentosOficiales({ cambiarVista }) {
       params.append('limit', '100')
       
       const resp = await apiFetch(`/api/documents/official?${params.toString()}`)
-      setDocuments(resp?.data?.documents || [])
+      setAllDocuments(resp?.data?.documents || [])
     } catch (err) {
       console.error('Error cargando documentos oficiales:', err)
       setError('No se pudieron cargar los documentos oficiales')
     } finally {
       setLoading(false)
     }
+  }
+
+  const filterDocuments = () => {
+    let filtered = [...allDocuments]
+
+    if (filterCategory) {
+      filtered = filtered.filter(doc => doc.category === filterCategory)
+    }
+
+    if (filterCourse) {
+      filtered = filtered.filter(doc => doc.course && doc.course.toLowerCase() === filterCourse.toLowerCase())
+    }
+
+    setDocuments(filtered)
   }
 
   const handleView = async (docId) => {
@@ -111,13 +132,30 @@ function VistaDocumentosOficiales({ cambiarVista }) {
     `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=4c51bf&color=fff`
 
   const uniqueProfessors = [...new Set(
-    documents
+    allDocuments
       .map(doc => doc.author?.name)
       .filter(Boolean)
   )].sort()
 
+  const uniqueCourses = [...new Set(
+    allDocuments
+      .map(doc => doc.course)
+      .filter(Boolean)
+  )].sort()
+
+  const getCategoryOptions = () => {
+    // Las categorías del backend (academic, research, project, other) se mapean a las opciones del Dashboard
+    const categoryMap = {
+      academic: 'Apuntes',
+      research: 'Guías',
+      project: 'Resúmenes',
+      other: 'Otros'
+    }
+    return Object.entries(categoryMap).map(([value, label]) => ({ value, label }))
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -145,27 +183,51 @@ function VistaDocumentosOficiales({ cambiarVista }) {
           )}
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow border p-4 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border dark:border-gray-700 p-6 mb-6 hover:shadow-xl transition-shadow">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
               <input
                 type="text"
                 placeholder="Buscar documentos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-gray-400 dark:hover:border-gray-600 dark:bg-gray-700 dark:text-white"
               />
             </div>
             <div>
               <select
                 value={filterProfessor}
                 onChange={(e) => setFilterProfessor(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                className="w-full px-4 py-2.5 border-2 border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-gray-400 dark:hover:border-gray-600 dark:bg-gray-700 dark:text-white"
               >
                 <option value="">Todos los profesores</option>
                 {uniqueProfessors.map(professor => (
                   <option key={professor} value={professor}>{professor}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="w-full px-4 py-2.5 border-2 border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-gray-400 dark:hover:border-gray-600 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">Todas las categorías</option>
+                {getCategoryOptions().map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <select
+                value={filterCourse}
+                onChange={(e) => setFilterCourse(e.target.value)}
+                className="w-full px-4 py-2.5 border-2 border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-gray-400 dark:hover:border-gray-600 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="">Todos los cursos</option>
+                {uniqueCourses.map(course => (
+                  <option key={course} value={course}>{course}</option>
                 ))}
               </select>
             </div>
@@ -199,13 +261,13 @@ function VistaDocumentosOficiales({ cambiarVista }) {
                 key={doc._id || doc.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-gray-800 rounded-xl shadow border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition"
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-xl hover:scale-[1.01] transition-all duration-300"
               >
                 <div className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1">
-                      <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                        <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <div className="p-3 bg-gradient-to-br from-blue-100 to-sky-100 dark:from-blue-900/40 dark:to-sky-900/40 rounded-xl shadow-sm">
+                        <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                       </div>
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
@@ -256,7 +318,7 @@ function VistaDocumentosOficiales({ cambiarVista }) {
                     <div className="flex items-center gap-2 ml-4">
                       <button
                         onClick={() => handleView(doc._id || doc.id)}
-                        className="px-3 py-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition flex items-center gap-1"
+                        className="px-4 py-2.5 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 rounded-lg transition-all duration-200 flex items-center gap-2 hover:scale-105 active:scale-95 shadow-sm hover:shadow"
                       >
                         <Eye className="w-4 h-4" />
                         Ver
@@ -264,7 +326,7 @@ function VistaDocumentosOficiales({ cambiarVista }) {
                       <button
                         onClick={() => handleDownload(doc._id || doc.id, doc.fileName)}
                         disabled={downloading === (doc._id || doc.id)}
-                        className="px-3 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition flex items-center gap-1 disabled:opacity-50"
+                        className="px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
                       >
                         <Download className="w-4 h-4" />
                         {downloading === (doc._id || doc.id) ? 'Descargando...' : 'Descargar'}

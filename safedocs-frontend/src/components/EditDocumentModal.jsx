@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Edit, X, Save } from 'lucide-react'
 import { useDocuments } from '../contexts/DocumentContext'
 
-function EditDocumentModal({ documento, onClose, onSuccess }) {
+function ModalEditarDocumento({ documento, onClose, onSuccess }) {
   const { updateDocument, loading } = useDocuments()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -182,5 +182,5 @@ function EditDocumentModal({ documento, onClose, onSuccess }) {
   )
 }
 
-export default EditDocumentModal
+export default ModalEditarDocumento
 

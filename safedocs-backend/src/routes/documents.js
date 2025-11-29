@@ -39,6 +39,12 @@ router.post('/:id/share', DocumentController.generateShareLink);
 // Remover validación del middleware para shareWithFriends - se valida manualmente en el controlador
 router.post('/:id/share-friends', DocumentController.shareWithFriends);
 
+// Rutas de favoritos (antes de /:id para evitar conflictos)
+router.get('/favorites', DocumentController.getFavoriteDocuments);
+router.post('/:id/favorite', DocumentController.addToFavorites);
+router.delete('/:id/favorite', DocumentController.removeFromFavorites);
+router.get('/:id/is-favorite', DocumentController.checkIsFavorite);
+
 // Rutas de documento específico (al final para evitar conflictos con rutas específicas)
 router.get('/:id', documentValidations.getById, handleValidationErrors, DocumentController.getDocumentById);
 router.get('/:id/download', documentValidations.download, handleValidationErrors, DocumentController.downloadDocument);

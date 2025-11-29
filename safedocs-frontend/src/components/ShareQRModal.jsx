@@ -5,7 +5,7 @@ import { Copy, Check, X, Users, Share2 } from 'lucide-react'
 import { apiFetch } from '../utils/api'
 import { useDocuments } from '../contexts/DocumentContext'
 
-function ShareQRModal({ documentId, shareUrl, onClose, onShareWithFriends }) {
+function ModalCompartirQR({ documentId, shareUrl, onClose, onShareWithFriends }) {
   const canvasRef = useRef(null)
   const [copied, setCopied] = useState(false)
   const [activeTab, setActiveTab] = useState('qr')
@@ -426,6 +426,6 @@ function ShareQRModal({ documentId, shareUrl, onClose, onShareWithFriends }) {
   )
 }
 
-export default ShareQRModal
+export default ModalCompartirQR
 
 

@@ -23,7 +23,7 @@ const auditLogSchema = new mongoose.Schema({
   },
   action: {
     type: String,
-    enum: ['upload', 'delete', 'view', 'download', 'update', 'comment', 'like'],
+    enum: ['upload', 'delete', 'view', 'download', 'update', 'comment', 'like', 'share', 'add_favorite', 'remove_favorite'],
     required: true,
     index: true,
   },

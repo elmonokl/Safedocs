@@ -1,7 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 
-const LoadingSpinner = ({ size = 'md', text = 'Cargando...', className = '' }) => {
+const Cargador = ({ size = 'md', text = 'Cargando...', className = '' }) => {
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-6 h-6',
@@ -31,4 +31,4 @@ const LoadingSpinner = ({ size = 'md', text = 'Cargando...', className = '' }) =
   )
 }
 
-export default LoadingSpinner 
+export default Cargador 

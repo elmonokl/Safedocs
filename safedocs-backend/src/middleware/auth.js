@@ -1,7 +1,11 @@
+// Middleware de autenticación y autorización
+// Maneja la verificación de tokens JWT y el rate limiting
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 
+// Middleware que verifica y valida el token JWT del usuario
+// Si el token es válido, agrega la información del usuario a req.user
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -54,6 +58,8 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
+// Middleware de autenticación opcional
+// Similar a authenticateToken pero no requiere token (útil para rutas públicas)
 const optionalAuthenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -85,6 +91,8 @@ const optionalAuthenticateToken = async (req, res, next) => {
   }
 };
 
+// Rate limiter para rutas de autenticación (login/register)
+// Limita a 5 intentos por 15 minutos para prevenir ataques de fuerza bruta
 const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -114,6 +122,8 @@ const authRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Rate limiter general para todas las rutas
+// Limita a 100 solicitudes por 15 minutos
 const generalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -146,6 +156,8 @@ const generalRateLimiter = rateLimit({
   }
 });
 
+// Middleware que actualiza la última conexión del usuario
+// Se ejecuta en cada request autenticado para mantener el estado "en línea"
 const updateLastSeen = async (req, res, next) => {
   try {
     if (req.user && req.user.userId) {

@@ -1,3 +1,5 @@
+// Componente principal de la aplicación
+// Maneja el enrutamiento entre diferentes vistas y provee los contextos globales
 import React, { useState, useEffect } from 'react'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { DocumentProvider } from './contexts/DocumentContext'
@@ -16,17 +18,23 @@ import VistaAuditoria from './components/VistaAuditoria'
 import VistaVistos from './components/VistaVistos'
 import VistaDocumentosOficiales from './components/VistaDocumentosOficiales'
 import VistaDocumentosCompartidos from './components/VistaDocumentosCompartidos'
+import VistaFavoritos from './components/VistaFavoritos'
 import SubirDocumentoOficial from './components/SubirDocumentoOficial'
 import Toast from './components/Toast'
-import ConfirmDialog from './components/ConfirmDialog'
-import LoadingSpinner from './components/LoadingSpinner'
+import DialogoConfirmacion from './components/ConfirmDialog'
+import Cargador from './components/LoadingSpinner'
 
+// Componente interno que maneja el estado de la aplicación
 function AppContent() {
   const { user, loading } = useAuth()
+  // Estado que controla qué vista mostrar (inicio, login, dashboard, etc.)
   const [vista, setVista] = useState('inicio')
+  // Estado para mostrar notificaciones toast
   const [toast, setToast] = useState(null)
+  // Estado para mostrar diálogos de confirmación
   const [confirmDialog, setConfirmDialog] = useState(null)
 
+  // Efecto que redirige al usuario según su estado de autenticación
   useEffect(() => {
     if (!loading) {
       if (user) {
@@ -38,15 +46,18 @@ function AppContent() {
   }, [user, loading])
 
   if (loading) {
-    return <LoadingSpinner />
+    return <Cargador />
   }
 
+  // Función para navegar a la vista de documentos
   const irADocumentos = () => setVista('dashboard')
 
+  // Función para mostrar notificaciones toast
   const showToast = (message, type = 'success') => {
     setToast({ message, type })
   }
 
+  // Función para mostrar diálogos de confirmación
   const showConfirmDialog = (config) => {
     setConfirmDialog(config)
   }
@@ -54,7 +65,7 @@ function AppContent() {
   return (
     <ThemeProvider>
       <DocumentProvider>
-        <div className="min-h-screen bg-gray-100 dark:from-gray-900 dark:via-gray-950 dark:to-black">
+        <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
           {vista === 'inicio' && <Hero cambiarVista={setVista} />}
           {vista === 'login' && <Login cambiarVista={setVista} showToast={showToast} />}
           {vista === 'registro' && <Registro cambiarVista={setVista} showToast={showToast} />}
@@ -76,6 +87,7 @@ function AppContent() {
           {vista === 'vistos' && <VistaVistos cambiarVista={setVista} />}
           {vista === 'documentos-oficiales' && <VistaDocumentosOficiales cambiarVista={setVista} />}
           {vista === 'documentos-compartidos' && <VistaDocumentosCompartidos cambiarVista={setVista} />}
+          {vista === 'favoritos' && <VistaFavoritos cambiarVista={setVista} />}
           {vista === 'subir-oficial' && <SubirDocumentoOficial cambiarVista={setVista} showToast={showToast} />}
 
           {toast && (
@@ -87,7 +99,7 @@ function AppContent() {
           )}
 
           {confirmDialog && (
-            <ConfirmDialog
+            <DialogoConfirmacion
               isOpen={!!confirmDialog}
               onClose={() => setConfirmDialog(null)}
               onConfirm={confirmDialog.onConfirm}
@@ -104,6 +116,7 @@ function AppContent() {
   )
 }
 
+// Componente raíz que envuelve la aplicación con los providers necesarios
 function App() {
   return (
     <AuthProvider>

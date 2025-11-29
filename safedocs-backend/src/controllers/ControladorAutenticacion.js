@@ -1,3 +1,5 @@
+// Controlador de autenticación
+// Maneja registro, login, verificación de tokens, actualización de perfil y eliminación de cuentas
 const User = require('../models/User');
 const Document = require('../models/Document');
 const Friendship = require('../models/Friendship');
@@ -8,45 +10,56 @@ const fs = require('fs').promises;
 const path = require('path');
 
 class AuthController {
+  // Registra un nuevo usuario en el sistema
+  // Valida email institucional, verifica duplicados y genera token JWT
   static async register(req, res, next) {
     try {
-
       const { name, email, password, career, role } = req.body;
 
-      const existingUser = await User.findByEmail(email);
-      if (existingUser) {
-        return res.status(400).json({
-          success: false,
-          message: 'El correo electrónico ya está registrado'
-        });
-      }
+      // Normalizar email para verificación consistente
+      const normalizedEmail = email ? email.toLowerCase().trim() : '';
 
-      if (!email.endsWith('@unab.cl')) {
+      // Verificar email institucional
+      if (!normalizedEmail.endsWith('@unab.cl')) {
         return res.status(400).json({
           success: false,
           message: 'Debes usar un correo institucional (@unab.cl)'
         });
       }
 
-      if (password.length < 6) {
+      // Verificar si el email ya existe
+      const existingUser = await User.findByEmail(normalizedEmail);
+      if (existingUser) {
+        console.log(`Intento de registro con email existente: ${normalizedEmail}`);
+        return res.status(400).json({
+          success: false,
+          message: 'El correo electrónico ya está registrado'
+        });
+      }
+
+      // Validar contraseña
+      if (!password || password.length < 6) {
         return res.status(400).json({
           success: false,
           message: 'La contraseña debe tener al menos 6 caracteres'
         });
       }
 
+      // Validar y asignar rol
       const validRoles = ['student', 'professor', 'admin'];
-      const userRole = role && validRoles.includes(role) ? role : 'student';
+      const userRole = role && validRoles.includes(role.toLowerCase()) ? role.toLowerCase() : 'student';
 
       const userData = {
-        name,
-        email,
+        name: name.trim(),
+        email: normalizedEmail,
         password,
-        career: career || 'Ingeniería en Computación e Informática',
+        career: career ? career.trim() : 'Ingeniería en Computación e Informática',
         role: userRole
       };
 
-      const newUser = await User.create(userData);
+      // Crear nuevo usuario
+      const newUser = new User(userData);
+      await newUser.save();
 
       const token = jwt.sign(
         { userId: newUser._id, email: newUser.email },
@@ -64,6 +77,30 @@ class AuthController {
       });
 
     } catch (error) {
+      console.error('Error en registro:', error);
+      
+      // Si es un error de Mongoose (email duplicado u otro), pasar al handler de errores
+      if (error.code === 11000) {
+        // Error de índice único duplicado
+        return res.status(400).json({
+          success: false,
+          message: 'El correo electrónico ya está registrado'
+        });
+      }
+      
+      // Si es un error de validación de Mongoose
+      if (error.name === 'ValidationError') {
+        const firstError = Object.values(error.errors)[0];
+        return res.status(400).json({
+          success: false,
+          message: firstError ? firstError.message : 'Datos de entrada inválidos',
+          errors: Object.values(error.errors).map(err => ({
+            field: err.path,
+            message: err.message
+          }))
+        });
+      }
+      
       next(error);
     }
   }

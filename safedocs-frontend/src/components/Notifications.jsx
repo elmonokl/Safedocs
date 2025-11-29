@@ -126,22 +126,30 @@ function Notifications({ cambiarVista }) {
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'friend_request':
-        return <Users className="w-4 h-4" />
+        return <Users className="w-5 h-5" />
       case 'official_document':
-        return <FileText className="w-4 h-4" />
+        return <FileText className="w-5 h-5" />
+      case 'document_shared':
+        return <FileText className="w-5 h-5" />
+      case 'friend_accepted':
+        return <Users className="w-5 h-5" />
       default:
-        return <Bell className="w-4 h-4" />
+        return <Bell className="w-5 h-5" />
     }
   }
 
   const getNotificationColor = (type) => {
     switch (type) {
       case 'friend_request':
-        return 'text-sky-400 bg-sky-100 border-sky-200'
+        return 'text-sky-600 dark:text-sky-400 bg-sky-100 dark:bg-sky-900/30 border-sky-300 dark:border-sky-700'
       case 'official_document':
-        return 'text-pink-400 bg-pink-100 border-pink-200'
+        return 'text-pink-600 dark:text-pink-400 bg-pink-100 dark:bg-pink-900/30 border-pink-300 dark:border-pink-700'
+      case 'document_shared':
+        return 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700'
+      case 'friend_accepted':
+        return 'text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700'
       default:
-        return 'text-purple-400 bg-purple-100 border-purple-200'
+        return 'text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 border-purple-300 dark:border-purple-700'
     }
   }
 
@@ -167,13 +175,13 @@ function Notifications({ cambiarVista }) {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-700 z-10"
+        className="relative p-2.5 rounded-xl bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 z-10 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow-md"
         aria-label="Notificaciones"
         title="Notificaciones"
       >
-        <Bell className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+        <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 bg-pink-300 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-sm px-1">
+          <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full min-w-[20px] h-[20px] flex items-center justify-center shadow-lg px-1.5 ring-2 ring-white dark:ring-gray-800">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -194,44 +202,61 @@ function Notifications({ cambiarVista }) {
               initial={{ opacity: 0, y: -10, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="absolute right-0 mt-2 w-80 md:w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-96 overflow-hidden flex flex-col"
+              transition={{ duration: 0.2, type: 'spring', damping: 20 }}
+              className="absolute right-0 mt-2 w-80 md:w-96 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-gray-200 dark:border-gray-700 z-50 max-h-[500px] overflow-hidden flex flex-col"
             >
-              <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-purple-50/50">
-                <h3 className="text-sm font-semibold text-sky-600">Notificaciones</h3>
+              <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-750">
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-1 rounded"
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors mr-3"
                   aria-label="Cerrar"
                 >
-                  <X className="w-4 h-4 text-gray-400" />
+                  <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                 </button>
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="p-1.5 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg">
+                    <Bell className="w-4 h-4 text-white" />
+                  </div>
+                  <h3 className="text-base font-bold text-gray-800 dark:text-gray-100">Notificaciones</h3>
+                  {unreadCount > 0 && (
+                    <span className="px-2 py-0.5 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full ml-1">
+                      {unreadCount}
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto">
                 {loading ? (
-                  <div className="px-4 py-8 text-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-300 mx-auto"></div>
-                    <p className="mt-2 text-xs text-gray-400">Cargando...</p>
+                  <div className="px-4 py-12 text-center">
+                    <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full mb-3">
+                      <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-500 border-t-transparent"></div>
+                    </div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Cargando notificaciones...</p>
                   </div>
                 ) : notifications.length === 0 ? (
-                  <div className="px-4 py-8 text-center">
-                    <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-sm text-gray-400">No hay notificaciones</p>
+                  <div className="px-4 py-12 text-center">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+                      <Bell className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                    </div>
+                    <p className="text-base font-medium text-gray-600 dark:text-gray-400 mb-1">No hay notificaciones</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-500">Las notificaciones aparecerán aquí</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-gray-100">
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
                     {notifications.map((notification) => (
                       <button
                         key={notification._id}
                         onClick={() => handleNotificationClick(notification)}
-                        className={`w-full px-4 py-3 text-left ${
-                          !notification.isRead ? 'bg-pink-50/30' : ''
+                        className={`w-full px-5 py-4 text-left transition-all duration-200 hover:bg-gradient-to-r ${
+                          !notification.isRead 
+                            ? 'bg-gradient-to-r from-blue-50/50 to-pink-50/30 dark:from-blue-900/20 dark:to-pink-900/10 border-l-4 border-blue-500' 
+                            : 'hover:from-gray-50 hover:to-blue-50/30 dark:hover:from-gray-700/50 dark:hover:to-gray-700/30'
                         }`}
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-4">
                           <div
-                            className={`p-2 rounded-lg border flex-shrink-0 ${getNotificationColor(
+                            className={`p-2.5 rounded-xl border-2 flex-shrink-0 shadow-sm ${getNotificationColor(
                               notification.type
                             )}`}
                           >
@@ -239,20 +264,21 @@ function Notifications({ cambiarVista }) {
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">
-                              {notification.title}
-                            </p>
-                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                            <div className="flex items-start justify-between gap-3 mb-1">
+                              <p className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                                {notification.title}
+                              </p>
+                              {!notification.isRead && (
+                                <div className="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-r from-blue-500 to-pink-500 rounded-full mt-1.5 ml-2"></div>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">
                               {notification.message}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-500 mt-2">
                               {formatDate(notification.createdAt)}
                             </p>
                           </div>
-
-                          {!notification.isRead && (
-                            <div className="flex-shrink-0 w-2 h-2 bg-pink-300 rounded-full mt-2"></div>
-                          )}
                         </div>
                       </button>
                     ))}
@@ -260,28 +286,15 @@ function Notifications({ cambiarVista }) {
                 )}
               </div>
 
-              {notifications.length > 0 && (
-                <div className="px-4 py-2 border-t border-gray-200 bg-purple-50/50 flex items-center justify-between gap-2">
+              {notifications.length > 0 && unreadCount > 0 && (
+                <div className="px-5 py-3 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-blue-50/30 dark:from-gray-800 dark:to-gray-750 flex items-center justify-end">
                   <button
-                    onClick={() => {
-                      setIsOpen(false)
-                      if (cambiarVista) {
-                        cambiarVista('dashboard')
-                      }
-                    }}
-                    className="text-xs text-sky-300 font-medium flex items-center gap-1"
+                    onClick={markAllAsRead}
+                    className="text-sm text-green-600 dark:text-green-400 font-semibold flex items-center gap-2 hover:text-green-700 dark:hover:text-green-300 transition-colors px-3 py-1.5 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20"
                   >
-                    Ver todas <ChevronRight className="w-3 h-3" />
+                    <CheckCheck className="w-4 h-4" />
+                    Marcar todas como leídas
                   </button>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={markAllAsRead}
-                      className="text-xs text-green-400 font-medium flex items-center gap-1"
-                    >
-                      <CheckCheck className="w-3 h-3" />
-                      Leído todos
-                    </button>
-                  )}
                 </div>
               )}
             </motion.div>

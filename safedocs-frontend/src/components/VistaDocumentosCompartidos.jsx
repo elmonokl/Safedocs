@@ -124,7 +124,7 @@ function VistaDocumentosCompartidos({ cambiarVista }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-6">
           <button
@@ -133,34 +133,32 @@ function VistaDocumentosCompartidos({ cambiarVista }) {
           >
             ← Volver al panel
           </button>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
-                <Share2 className="w-8 h-8 text-blue-500" />
-                Documentos Compartidos
-              </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                Documentos que tus amigos han compartido contigo
-              </p>
-            </div>
-            {unreadCount > 0 && (
-              <div className="px-4 py-2 bg-red-100 text-red-800 rounded-lg flex items-center gap-2">
-                <AlertCircle className="w-5 h-5" />
-                <span className="font-semibold">{unreadCount} nuevo(s)</span>
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl shadow-md">
+                <Share2 className="w-8 h-8 text-white" />
               </div>
-            )}
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-800 to-indigo-800 dark:from-blue-300 dark:to-indigo-300 bg-clip-text text-transparent">
+                  Documentos Compartidos
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  Documentos que tus amigos han compartido contigo
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-5 h-5" />
             <input
               type="text"
               placeholder="Buscar documentos compartidos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+              className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:text-white transition-all hover:border-gray-400 dark:hover:border-gray-600 shadow-sm"
             />
           </div>
         </div>
@@ -195,18 +193,23 @@ function VistaDocumentosCompartidos({ cambiarVista }) {
                 key={doc._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`bg-white dark:bg-gray-800 rounded-lg shadow border transition-all duration-200 hover:shadow-lg cursor-pointer ${
-                  !doc.isRead ? 'border-blue-400 border-2 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700'
+                className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg border-2 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] cursor-pointer ${
+                  !doc.isRead ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/20' : 'border-gray-200 dark:border-gray-700'
                 }`}
                 onClick={() => handleViewDocument(doc)}
               >
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 truncate flex-1">
-                      {doc.title}
-                    </h3>
+                <div className="p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className="p-2 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 rounded-lg mt-1">
+                        <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 truncate flex-1">
+                        {doc.title}
+                      </h3>
+                    </div>
                     {!doc.isRead && (
-                      <span className="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded-full">
+                      <span className="ml-2 px-3 py-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-xs font-bold rounded-full shadow-sm">
                         Nuevo
                       </span>
                     )}

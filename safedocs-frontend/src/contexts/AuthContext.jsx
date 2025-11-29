@@ -1,8 +1,10 @@
+// Contexto de autenticación que maneja el estado del usuario y las operaciones de login/registro
 import { createContext, useContext, useState, useEffect } from 'react'
 import { apiFetch } from '../utils/api'
 
 const AuthContext = createContext()
 
+// Hook personalizado para acceder al contexto de autenticación
 export const useAuth = () => {
   const context = useContext(AuthContext)
   if (!context) {
@@ -11,11 +13,13 @@ export const useAuth = () => {
   return context
 }
 
+// Provider que envuelve la aplicación y provee el estado de autenticación
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // Efecto que verifica si el usuario está autenticado al cargar la aplicación
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -24,6 +28,7 @@ export const AuthProvider = ({ children }) => {
           setLoading(false)
           return
         }
+        // Verifica el token con el servidor
         const resp = await apiFetch('/api/auth/verify')
         const u = resp?.data?.user
         if (u) {
@@ -43,6 +48,7 @@ export const AuthProvider = ({ children }) => {
     checkAuth()
   }, [])
 
+  // Función para iniciar sesión
   const login = async (email, password) => {
     setError('')
     setLoading(true)
@@ -67,6 +73,7 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  // Función para registrar un nuevo usuario
   const register = async (userData) => {
     setError('')
     setLoading(true)
@@ -86,13 +93,40 @@ export const AuthProvider = ({ children }) => {
       setUser(u)
       return true
     } catch (err) {
-      setError(err.message || 'Error en el registro')
+      // Extraer mensaje de error de la respuesta
+      let errorMessage = 'Error en el registro'
+      
+      // Prioridad: mensaje directo > respuesta del servidor > errores de validación
+      if (err.message && err.message !== 'Error en el registro') {
+        errorMessage = err.message
+      }
+      
+      if (err.response) {
+        // Si hay respuesta del servidor con mensaje principal
+        if (err.response.message) {
+          errorMessage = err.response.message
+        }
+        
+        // Si hay errores de validación específicos, agregarlos o reemplazar
+        if (err.response.errors && Array.isArray(err.response.errors) && err.response.errors.length > 0) {
+          const validationErrors = err.response.errors.map(e => e.message).join(', ')
+          if (validationErrors) {
+            errorMessage = validationErrors
+          }
+        }
+      }
+      
+      console.error('Error completo en registro:', err)
+      console.error('Mensaje de error extraído:', errorMessage)
+      
+      setError(errorMessage)
       return false
     } finally {
       setLoading(false)
     }
   }
 
+  // Función para cerrar sesión
   const logout = async () => {
     try {
       await apiFetch('/api/auth/logout', { method: 'POST' })
@@ -102,6 +136,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token')
   }
 
+  // Función para actualizar el perfil del usuario
   const updateProfile = async (profileData) => {
     setError('')
     setLoading(true)
@@ -121,6 +156,7 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  // Función para eliminar la cuenta del usuario
   const deleteAccount = async (confirmation) => {
     setError('')
     setLoading(true)

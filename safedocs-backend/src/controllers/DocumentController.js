@@ -1,8 +1,11 @@
+// Controlador de documentos
+// Maneja todas las operaciones relacionadas con documentos: subida, descarga, actualización, eliminación, compartir y favoritos
 const Document = require('../models/Document');
 const User = require('../models/User');
 const AuditLog = require('../models/AuditLog');
 const Friendship = require('../models/Friendship');
 const SharedDocument = require('../models/SharedDocument');
+const Favorite = require('../models/Favorite');
 const mongoose = require('mongoose');
 const path = require('path');
 const fs = require('fs').promises;
@@ -11,6 +14,7 @@ const { documentUpload } = require('../middleware/upload');
 const upload = documentUpload;
 
 class DocumentController {
+  // Mapea las categorías del frontend al formato del modelo
   static mapCategoryToModel(category) {
     const mapping = {
       'Apuntes': 'academic',
@@ -23,6 +27,8 @@ class DocumentController {
     };
     return mapping[category] || category;
   }
+  // Sube un nuevo documento al sistema
+  // Valida el archivo, guarda en el servidor y crea el registro en la base de datos
   static async uploadDocument(req, res, next) {
     try {
       if (!req.file) {
@@ -135,6 +141,7 @@ class DocumentController {
         });
       }
 
+      // Los documentos oficiales no necesitan shareToken ya que son públicos para todos
       const documentData = {
         userId,
         title,
@@ -146,9 +153,16 @@ class DocumentController {
         fileType: req.file.mimetype,
         fileSize: req.file.size,
         isOfficial: true,
-        isPublic: true,
-        shareToken: null
+        isPublic: true
+        // No incluir shareToken para documentos oficiales
       };
+
+      console.log('Intentando crear documento oficial con datos:', {
+        title,
+        course: course.trim(),
+        userId,
+        isOfficial: true
+      });
 
       const newDocument = await Document.create(documentData);
       const populatedDocument = await Document.findById(newDocument._id)
@@ -178,6 +192,15 @@ class DocumentController {
       });
 
     } catch (error) {
+      console.error('Error completo en uploadOfficialDocument:', {
+        message: error.message,
+        code: error.code,
+        name: error.name,
+        keyPattern: error.keyPattern,
+        keyValue: error.keyValue,
+        stack: error.stack
+      });
+
       if (req.file) {
         try {
           await fs.unlink(req.file.path);
@@ -948,7 +971,6 @@ class DocumentController {
 
       if (!document.shareToken) {
         await document.generateShareToken();
-        await document.save();
       }
 
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
@@ -1062,6 +1084,201 @@ class DocumentController {
         message: 'Documento marcado como leído',
         data: {
           sharedDocument
+        }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Agregar documento a favoritos
+  static async addToFavorites(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const { id } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID de documento inválido'
+        });
+      }
+
+      // Verificar que el documento existe
+      const document = await Document.findById(id);
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Documento no encontrado'
+        });
+      }
+
+      // Verificar si ya es favorito
+      const existingFavorite = await Favorite.isFavorite(userId, id);
+      if (existingFavorite) {
+        return res.status(400).json({
+          success: false,
+          message: 'El documento ya está en tus favoritos'
+        });
+      }
+
+      // Crear favorito
+      const favorite = new Favorite({
+        userId,
+        documentId: id
+      });
+      await favorite.save();
+
+      // Registrar en auditoría
+      try {
+        await AuditLog.createLog({
+          userId: userId,
+          actorId: userId,
+          documentId: document._id,
+          action: 'add_favorite',
+          description: `Documento "${document.title}" agregado a favoritos`,
+          comment: `Curso: ${document.course || 'N/A'}`
+        });
+      } catch (auditError) {
+        console.error('Error registrando agregado a favoritos en auditoría:', auditError);
+      }
+
+      res.json({
+        success: true,
+        message: 'Documento agregado a favoritos',
+        data: { favorite }
+      });
+
+    } catch (error) {
+      if (error.code === 11000) {
+        return res.status(400).json({
+          success: false,
+          message: 'El documento ya está en tus favoritos'
+        });
+      }
+      next(error);
+    }
+  }
+
+  // Remover documento de favoritos
+  static async removeFromFavorites(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const { id } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID de documento inválido'
+        });
+      }
+
+      const document = await Document.findById(id);
+      if (!document) {
+        return res.status(404).json({
+          success: false,
+          message: 'Documento no encontrado'
+        });
+      }
+
+      const favorite = await Favorite.findOneAndDelete({ userId, documentId: id });
+
+      if (!favorite) {
+        return res.status(404).json({
+          success: false,
+          message: 'El documento no está en tus favoritos'
+        });
+      }
+
+      // Registrar en auditoría
+      try {
+        await AuditLog.createLog({
+          userId: userId,
+          actorId: userId,
+          documentId: document._id,
+          action: 'remove_favorite',
+          description: `Documento "${document.title}" removido de favoritos`,
+          comment: `Curso: ${document.course || 'N/A'}`
+        });
+      } catch (auditError) {
+        console.error('Error registrando remoción de favorito en auditoría:', auditError);
+      }
+
+      res.json({
+        success: true,
+        message: 'Documento removido de favoritos',
+        data: { favorite }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Obtener documentos favoritos del usuario
+  static async getFavoriteDocuments(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const { limit = 50, skip = 0 } = req.query;
+
+      const favorites = await Favorite.find({ userId })
+        .populate({
+          path: 'document',
+          populate: {
+            path: 'author',
+            select: 'name career profilePicture'
+          }
+        })
+        .sort({ createdAt: -1 })
+        .limit(parseInt(limit))
+        .skip(parseInt(skip));
+
+      // Filtrar documentos que puedan haber sido eliminados
+      const validFavorites = favorites.filter(fav => fav.document);
+      const documents = validFavorites.map(fav => {
+        const doc = fav.document.toObject();
+        return {
+          ...doc,
+          favoritedAt: fav.createdAt
+        };
+      });
+
+      const total = await Favorite.countDocuments({ userId });
+
+      res.json({
+        success: true,
+        data: {
+          documents,
+          total,
+          count: documents.length
+        }
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Verificar si un documento es favorito
+  static async checkIsFavorite(req, res, next) {
+    try {
+      const userId = req.user.userId;
+      const { id } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({
+          success: false,
+          message: 'ID de documento inválido'
+        });
+      }
+
+      const favorite = await Favorite.isFavorite(userId, id);
+
+      res.json({
+        success: true,
+        data: {
+          isFavorite: !!favorite
         }
       });
 

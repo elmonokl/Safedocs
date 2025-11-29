@@ -11,8 +11,15 @@ const authValidations = {
     
     body('email')
       .isEmail()
-      .normalizeEmail()
-      .withMessage('Email inválido'),
+      .withMessage('Email inválido')
+      .custom((value) => {
+        const emailLower = value ? value.toLowerCase().trim() : '';
+        if (!emailLower.endsWith('@unab.cl')) {
+          throw new Error('Debes usar un correo institucional (@unab.cl)');
+        }
+        return true;
+      })
+      .normalizeEmail(),
     
     body('password')
       .isLength({ min: 6 })
@@ -22,7 +29,12 @@ const authValidations = {
       .optional()
       .trim()
       .isLength({ min: 2, max: 100 })
-      .withMessage('La carrera debe tener entre 2 y 100 caracteres')
+      .withMessage('La carrera debe tener entre 2 y 100 caracteres'),
+    
+    body('role')
+      .optional()
+      .isIn(['student', 'professor', 'admin'])
+      .withMessage('El rol debe ser student, professor o admin')
   ],
 
   login: [
@@ -278,9 +290,13 @@ const handleValidationErrors = (req, res, next) => {
     console.log('Errores de validación:', errors.array());
     console.log('Body recibido:', JSON.stringify(req.body, null, 2));
     console.log('Params recibidos:', JSON.stringify(req.params, null, 2));
+    
+    const errorMessages = errors.array().map(error => error.msg);
+    const firstError = errors.array()[0];
+    
     return res.status(400).json({
       success: false,
-      message: 'Datos de entrada inválidos',
+      message: firstError ? firstError.msg : 'Datos de entrada inválidos',
       errors: errors.array().map(error => ({
         field: error.path || error.param,
         message: error.msg,

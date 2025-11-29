@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, X } from 'lucide-react'
 
-function DeleteAccountModal({ isOpen, onClose, onConfirm, loading, error: externalError }) {
+function ModalEliminarCuenta({ isOpen, onClose, onConfirm, loading, error: externalError }) {
   const [confirmation, setConfirmation] = useState('')
   const [error, setError] = useState('')
 
@@ -119,5 +119,5 @@ function DeleteAccountModal({ isOpen, onClose, onConfirm, loading, error: extern
   )
 }
 
-export default DeleteAccountModal
+export default ModalEliminarCuenta
 

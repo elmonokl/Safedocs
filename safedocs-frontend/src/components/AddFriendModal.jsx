@@ -29,7 +29,7 @@ function ButtonByStatus({ user, onSend }) {
   )
 }
 
-function AddFriendModal({ isOpen, onClose, onSent }) {
+function ModalAgregarAmigo({ isOpen, onClose, onSent }) {
   const [q, setQ] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
@@ -187,6 +187,6 @@ function AddFriendModal({ isOpen, onClose, onSent }) {
   )
 }
 
-export default AddFriendModal
+export default ModalAgregarAmigo
 
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { apiFetch } from '../utils/api'
 
 /**
@@ -48,15 +49,15 @@ function VistaAuditoria({ cambiarVista }) {
 
   const getAccionColor = (accion) => {
     const colores = {
-      upload: 'bg-green-100 text-green-700',
-      delete: 'bg-red-100 text-red-700',
-      download: 'bg-blue-100 text-blue-700',
-      view: 'bg-yellow-100 text-yellow-700',
-      update: 'bg-purple-100 text-purple-700',
-      comment: 'bg-gray-100 text-gray-700',
-      like: 'bg-pink-100 text-pink-700'
+      upload: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      delete: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+      download: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+      view: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+      update: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+      comment: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+      like: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400'
     }
-    return colores[accion] || 'bg-gray-100 text-gray-700'
+    return colores[accion] || 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
   }
 
   const getAccionTexto = (accion) => {
@@ -73,42 +74,57 @@ function VistaAuditoria({ cambiarVista }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">Registro de Auditoría</h1>
-          <button onClick={() => cambiarVista('dashboard')} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Volver</button>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl shadow-md">
+              <FileText className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-gray-100 dark:to-gray-300 bg-clip-text text-transparent">
+                Registro de Auditoría
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Historial completo de acciones del sistema</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => cambiarVista('dashboard')} 
+            className="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm hover:shadow"
+          >
+            Volver
+          </button>
         </div>
 
         {estadisticas && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="text-2xl font-bold text-green-600">{estadisticas.summary.uploads}</div>
-              <div className="text-sm text-gray-500">Documentos Subidos</div>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg dark:border-2 dark:border-gray-700 hover:shadow-xl transition-all duration-200 hover:scale-105 border-2 border-green-200 dark:border-green-800">
+              <div className="text-3xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{estadisticas.summary.uploads}</div>
+              <div className="text-sm font-semibold text-gray-600 dark:text-gray-400 mt-1">Documentos Subidos</div>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="text-2xl font-bold text-red-600">{estadisticas.summary.deletions}</div>
-              <div className="text-sm text-gray-500">Documentos Eliminados</div>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg dark:border-2 dark:border-gray-700 hover:shadow-xl transition-all duration-200 hover:scale-105 border-2 border-red-200 dark:border-red-800">
+              <div className="text-3xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">{estadisticas.summary.deletions}</div>
+              <div className="text-sm font-semibold text-gray-600 dark:text-gray-400 mt-1">Documentos Eliminados</div>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="text-2xl font-bold text-blue-600">{estadisticas.summary.downloads}</div>
-              <div className="text-sm text-gray-500">Descargas</div>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg dark:border-2 dark:border-gray-700 hover:shadow-xl transition-all duration-200 hover:scale-105 border-2 border-blue-200 dark:border-blue-800">
+              <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{estadisticas.summary.downloads}</div>
+              <div className="text-sm font-semibold text-gray-600 dark:text-gray-400 mt-1">Descargas</div>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow">
-              <div className="text-2xl font-bold text-gray-600">{estadisticas.totalActions}</div>
-              <div className="text-sm text-gray-500">Total de Acciones</div>
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg dark:border-2 dark:border-gray-700 hover:shadow-xl transition-all duration-200 hover:scale-105 border-2 border-gray-200 dark:border-gray-700">
+              <div className="text-3xl font-bold bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-300 dark:to-gray-100 bg-clip-text text-transparent">{estadisticas.totalActions}</div>
+              <div className="text-sm font-semibold text-gray-600 dark:text-gray-400 mt-1">Total de Acciones</div>
             </div>
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-4 border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg dark:border-2 dark:border-gray-700 hover:shadow-xl transition-shadow">
+          <div className="p-5 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-750">
             <div className="flex items-center justify-between">
               <div>
                 {error ? (
-                  <p className="text-red-600">{error}</p>
+                  <p className="text-red-600 dark:text-red-400 font-medium">{error}</p>
                 ) : (
-                  <p className="text-gray-500">Registro completo de todas las acciones en documentos.</p>
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">Registro completo de todas las acciones en documentos.</p>
                 )}
               </div>
               <select 
@@ -117,7 +133,7 @@ function VistaAuditoria({ cambiarVista }) {
                   setFiltroAccion(e.target.value)
                   setPagina(1)
                 }}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="px-4 py-2.5 border-2 border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-all hover:border-gray-400 dark:hover:border-gray-600 shadow-sm font-medium"
               >
                 <option value="">Todas las acciones</option>
                 <option value="upload">Subidas</option>
@@ -131,21 +147,38 @@ function VistaAuditoria({ cambiarVista }) {
             </div>
           </div>
           {cargando ? (
-            <div className="p-6 text-gray-500">Cargando...</div>
+            <div className="p-12 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+                <FileText className="w-8 h-8 text-gray-400 dark:text-gray-500 animate-pulse" />
+              </div>
+              <p className="text-base font-medium text-gray-600 dark:text-gray-400">Cargando registros de auditoría...</p>
+            </div>
           ) : eventos.length === 0 ? (
-            <div className="p-6 text-gray-500">No hay eventos aún.</div>
+            <div className="p-12 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+                <FileText className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+              </div>
+              <p className="text-base font-medium text-gray-600 dark:text-gray-400 mb-1">No hay eventos aún</p>
+              <p className="text-sm text-gray-500 dark:text-gray-500">Los registros de actividad aparecerán aquí</p>
+            </div>
           ) : (
               <>
-                <ul className="divide-y divide-gray-200">
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                   {eventos.map((evt) => (
-                    <li key={evt.id} className="p-4 hover:bg-gray-50">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="text-sm text-gray-500 mb-1">{formatFecha(evt.createdAt)}</div>
-                          <div className="text-gray-900">
-                            <span className="font-medium text-indigo-600">{evt.actor.name}</span>
-                            <span className="mx-1">({evt.actor.email})</span>
-                            <span className="mx-1">
+                    <li key={evt.id} className="p-5 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50/30 dark:hover:from-gray-700/50 dark:hover:to-gray-700/30 transition-all duration-200 group">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                              {formatFecha(evt.createdAt)}
+                            </div>
+                          </div>
+                          <div className="text-gray-900 dark:text-gray-100">
+                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">{evt.actor?.name || evt.actorName || 'Usuario desconocido'}</span>
+                            {(evt.actor?.email || evt.actorEmail) && (
+                              <span className="mx-1 text-gray-500 dark:text-gray-400 text-sm">({evt.actor?.email || evt.actorEmail})</span>
+                            )}
+                            <span className="mx-1 text-gray-600 dark:text-gray-400">
                               {evt.action === 'upload' && `subió el documento`}
                               {evt.action === 'delete' && `eliminó el documento`}
                               {evt.action === 'download' && `descargó el documento`}
@@ -154,16 +187,22 @@ function VistaAuditoria({ cambiarVista }) {
                               {evt.action === 'comment' && `comentó el documento`}
                               {evt.action === 'like' && `le dio me gusta al documento`}
                             </span>
-                            <span className="font-medium text-gray-700">"{evt.document.title}"</span>
+                            {(evt.document?.title || evt.documentTitle) && (
+                              <span className="font-semibold text-gray-800 dark:text-gray-200">"{evt.document?.title || evt.documentTitle}"</span>
+                            )}
                           </div>
                           {evt.description && (
-                            <div className="mt-2 text-sm text-gray-600">{evt.description}</div>
+                            <div className="mt-3 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-lg">
+                              {evt.description}
+                            </div>
                           )}
                           {evt.comment && (
-                            <div className="mt-2 px-3 py-2 bg-gray-50 text-gray-700 rounded text-sm">"{evt.comment}"</div>
+                            <div className="mt-3 px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-500 text-gray-700 dark:text-gray-300 rounded-r-lg text-sm italic">
+                              "{evt.comment}"
+                            </div>
                           )}
                         </div>
-                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getAccionColor(evt.action)}`}>
+                        <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm ${getAccionColor(evt.action)} dark:${getAccionColor(evt.action).replace('bg-', 'dark:bg-').replace('text-', 'dark:text-')}`}>
                           {getAccionTexto(evt.action)}
                         </span>
                       </div>
@@ -172,24 +211,26 @@ function VistaAuditoria({ cambiarVista }) {
                 </ul>
 
                 {totalPaginas > 1 && (
-                  <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
-                    <div className="text-sm text-gray-500">
-                      Página {pagina} de {totalPaginas}
+                  <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800 dark:to-gray-750 flex items-center justify-between">
+                    <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                      Página <span className="font-bold text-gray-900 dark:text-gray-100">{pagina}</span> de <span className="font-bold text-gray-900 dark:text-gray-100">{totalPaginas}</span>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex gap-2">
                       <button
                         onClick={() => setPagina(pagina - 1)}
                         disabled={pagina === 1}
-                        className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-2 border-gray-300 dark:border-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm disabled:hover:scale-100 text-gray-700 dark:text-gray-300"
                       >
+                        <ChevronLeft className="w-4 h-4" />
                         Anterior
                       </button>
                       <button
                         onClick={() => setPagina(pagina + 1)}
                         disabled={pagina === totalPaginas}
-                        className="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-2 border-gray-300 dark:border-gray-700 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm disabled:hover:scale-100 text-gray-700 dark:text-gray-300"
                       >
                         Siguiente
+                        <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
                   </div>

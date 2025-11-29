@@ -1,3 +1,6 @@
+// Modelo de Documento
+// Define el esquema de datos para los documentos del sistema
+// Incluye métodos para compartir, buscar y obtener estadísticas
 const mongoose = require('mongoose');
 
 // Esquema de Documento
@@ -97,17 +100,44 @@ documentSchema.virtual('author', {
   options: { select: 'name career profilePicture' }
 });
 
-// Método para incrementar descargas
+// Método para incrementar el contador de descargas
 documentSchema.methods.incrementDownloads = function() {
   this.downloadsCount += 1;
   return this.save();
 };
 
-// Método para generar token de compartir
-documentSchema.methods.generateShareToken = function() {
+// Método para generar un token único para compartir el documento
+// El token permite acceso público sin autenticación
+documentSchema.methods.generateShareToken = async function() {
   const crypto = require('crypto');
-  this.shareToken = crypto.randomBytes(32).toString('hex');
-  return this.save();
+  let attempts = 0;
+  const maxAttempts = 10;
+  
+  while (attempts < maxAttempts) {
+    try {
+      // Generar un nuevo token aleatorio
+      const token = crypto.randomBytes(32).toString('hex');
+      this.shareToken = token;
+      
+      // Intentar guardar directamente
+      // Si hay un error de duplicado, se capturará y se reintentará
+      return await this.save();
+    } catch (error) {
+      // Si es un error de índice único duplicado para shareToken, generar nuevo token y reintentar
+      if (error.code === 11000 && error.keyPattern && error.keyPattern.shareToken) {
+        attempts++;
+        // Limpiar el token antes de intentar con uno nuevo
+        this.shareToken = undefined;
+        // Continuar para generar un nuevo token
+        continue;
+      }
+      // Si es otro tipo de error, lanzarlo
+      throw error;
+    }
+  }
+  
+  // Si después de varios intentos no se encuentra uno único, lanzar error
+  throw new Error('No se pudo generar un token único después de múltiples intentos');
 };
 
 // Método estático para encontrar documento por token

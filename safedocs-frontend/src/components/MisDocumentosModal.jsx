@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, FileText, Edit, Trash2, ChevronRight, Download, Share2 } from 'lucide-react'
 import { useDocuments } from '../contexts/DocumentContext'
-import EditDocumentModal from './EditDocumentModal'
-import ConfirmDialog from './ConfirmDialog'
+import ModalEditarDocumento from './EditDocumentModal'
+import DialogoConfirmacion from './ConfirmDialog'
 import ModalDocumento from './ModalDocumento'
-import ShareQRModal from './ShareQRModal'
+import ModalCompartirQR from './ShareQRModal'
 
 function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
   const { documents, loading, error, loadDocuments, deleteDocument, generateShareLink, getDocumentById } = useDocuments()
@@ -218,7 +218,7 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
           )}
 
           {editingDoc && (
-            <EditDocumentModal
+            <ModalEditarDocumento
               documento={editingDoc}
               onClose={() => setEditingDoc(null)}
               onSuccess={handleEditSuccess}
@@ -226,7 +226,7 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
           )}
 
           {deletingDoc && (
-            <ConfirmDialog
+            <DialogoConfirmacion
               isOpen={!!deletingDoc}
               onClose={() => {
                 setDeletingDoc(null)
@@ -251,7 +251,7 @@ function MisDocumentosModal({ isOpen, onClose, showToast, showConfirmDialog }) {
           )}
 
           {sharingDoc && shareUrl && (
-            <ShareQRModal
+            <ModalCompartirQR
               documentId={sharingDoc.id}
               shareUrl={shareUrl}
               onClose={handleCloseShare}

@@ -1,3 +1,6 @@
+// Modelo de Usuario
+// Define el esquema de datos para los usuarios del sistema
+// Incluye validaciones, métodos de autenticación y helpers
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -69,7 +72,8 @@ userSchema.index({ isActive: 1 });
 userSchema.index({ isOnline: 1 });
 userSchema.index({ name: 1 });
 
-// Middleware para hashear contraseña antes de guardar
+// Middleware que se ejecuta antes de guardar
+// Hashea automáticamente la contraseña usando bcrypt
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
@@ -82,7 +86,7 @@ userSchema.pre('save', async function(next) {
   }
 });
 
-// Método para verificar contraseña
+// Método para comparar una contraseña con el hash almacenado
 userSchema.methods.verifyPassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };

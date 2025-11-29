@@ -2,7 +2,7 @@ import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, X } from 'lucide-react'
 
-const ConfirmDialog = ({ 
+const DialogoConfirmacion = ({ 
   isOpen, 
   onClose, 
   onConfirm, 
@@ -81,4 +81,4 @@ const ConfirmDialog = ({
   )
 }
 
-export default ConfirmDialog 
+export default DialogoConfirmacion 
