@@ -87,21 +87,21 @@ function Sidebar({ cambiarVista, onGoToUpload, onGoToDocuments }) {
     <>
       <div className="px-4 py-5 font-semibold tracking-wide border-b border-sky-400/30 bg-gradient-to-r from-sky-400/10 to-transparent">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-base font-bold text-blue-900 tracking-tight">SafeDocs UNAB</span>
+          <span className="text-base font-bold text-white tracking-tight">SafeDocs UNAB</span>
           {isMobile && (
             <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="p-1 rounded hover:bg-sky-500 transition-colors"
               aria-label="Cerrar menú"
             >
-              <X className="w-5 h-5 text-blue-900" />
+              <X className="w-5 h-5 text-white" />
             </button>
           )}
         </div>
         {user?.name && (
           <div className="mt-4 pt-3 border-t border-sky-400/30">
-            <p className="text-xs font-medium text-blue-700 mb-1.5 uppercase tracking-wider">Bienvenido</p>
-            <p className="text-sm font-semibold text-blue-900 truncate" title={user.name}>
+            <p className="text-xs font-medium text-white/90 mb-1.5 uppercase tracking-wider">Bienvenido</p>
+            <p className="text-sm font-semibold text-white truncate" title={user.name}>
               {user.name}
             </p>
           </div>
@@ -111,65 +111,65 @@ function Sidebar({ cambiarVista, onGoToUpload, onGoToDocuments }) {
       <nav className="flex-1 px-2 py-2 space-y-1">
         <button
           onClick={goDocuments}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
           aria-label="Ver mis documentos"
         >
-          <LayoutGrid className="w-5 h-5 flex-shrink-0 text-blue-900 group-hover:text-white transition-colors" />
-          <span className="text-sm font-semibold text-blue-900 group-hover:text-white transition-colors">Mis Documentos</span>
+          <LayoutGrid className="w-5 h-5 flex-shrink-0 text-white transition-colors" />
+          <span className="text-sm font-semibold text-white transition-colors">Mis Documentos</span>
         </button>
 
         <button
           onClick={goFriends}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
           aria-label="Gestionar amigos"
         >
-          <Users className="w-5 h-5 flex-shrink-0 text-blue-900 group-hover:text-white transition-colors" />
-          <span className="text-sm font-semibold text-blue-900 group-hover:text-white transition-colors">Amigos</span>
+          <Users className="w-5 h-5 flex-shrink-0 text-white transition-colors" />
+          <span className="text-sm font-semibold text-white transition-colors">Amigos</span>
         </button>
 
         <button
           onClick={goOfficialDocuments}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
           aria-label="Documentos oficiales"
         >
-          <FileText className="w-5 h-5 flex-shrink-0 text-blue-900 group-hover:text-white transition-colors" />
-          <span className="text-sm font-semibold text-blue-900 group-hover:text-white transition-colors">Documentos Oficiales</span>
+          <FileText className="w-5 h-5 flex-shrink-0 text-white transition-colors" />
+          <span className="text-sm font-semibold text-white transition-colors">Documentos Oficiales</span>
         </button>
 
         <button
           onClick={goSharedDocuments}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
           aria-label="Documentos compartidos"
         >
-          <Share2 className="w-5 h-5 flex-shrink-0 text-blue-900 group-hover:text-white transition-colors" />
-          <span className="text-sm font-semibold text-blue-900 group-hover:text-white transition-colors">Documentos Compartidos</span>
+          <Share2 className="w-5 h-5 flex-shrink-0 text-white transition-colors" />
+          <span className="text-sm font-semibold text-white transition-colors">Documentos Compartidos</span>
         </button>
 
         <button
           onClick={goFavorites}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
           aria-label="Favoritos"
         >
-          <Star className="w-5 h-5 flex-shrink-0 text-blue-900 group-hover:text-white transition-colors" />
-          <span className="text-sm font-semibold text-blue-900 group-hover:text-white transition-colors">Favoritos</span>
+          <Star className="w-5 h-5 flex-shrink-0 text-white transition-colors" />
+          <span className="text-sm font-semibold text-white transition-colors">Favoritos</span>
         </button>
         
         <button
           onClick={handleUpload}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
           aria-label="Subir documento"
         >
-          <Upload className="w-5 h-5 flex-shrink-0 text-blue-900 group-hover:text-white transition-colors" />
-          <span className="text-sm font-semibold text-blue-900 group-hover:text-white transition-colors">Subir Documento</span>
+          <Upload className="w-5 h-5 flex-shrink-0 text-white transition-colors" />
+          <span className="text-sm font-semibold text-white transition-colors">Subir Documento</span>
         </button>
         
         <button
           onClick={() => setDark(!dark)}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-blue-900 focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-sky-500 hover:text-white active:bg-sky-400 text-left transition-all duration-200 touch-manipulation min-h-[48px] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-sky-400 group shadow-sm hover:shadow-md"
           aria-label={`Cambiar a modo ${dark ? 'claro' : 'nocturno'}`}
         >
-          <Moon className="w-5 h-5 flex-shrink-0 text-blue-900 group-hover:text-white transition-colors" />
-          <span className="text-sm font-semibold text-blue-900 group-hover:text-white transition-colors">{dark ? 'Modo claro' : 'Modo nocturno'}</span>
+          <Moon className="w-5 h-5 flex-shrink-0 text-white transition-colors" />
+          <span className="text-sm font-semibold text-white transition-colors">{dark ? 'Modo claro' : 'Modo nocturno'}</span>
         </button>
       </nav>
       
