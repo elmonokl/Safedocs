@@ -715,69 +715,7 @@ User
 
 ---
 
-## 🚀 Preguntas Frecuentes sobre el Código
 
-### ¿Cómo funciona la autenticación?
-
-1. Usuario se registra/login → recibe token JWT
-2. Token se guarda en `localStorage`
-3. Cada request incluye header `Authorization: Bearer <token>`
-4. Middleware `authenticateToken` valida token
-5. Si es válido, agrega `req.user` con información del usuario
-
-### ¿Cómo se comparten los documentos?
-
-Hay dos formas:
-1. **Token público**: Genera `shareToken` único, cualquiera con el link puede acceder
-2. **Con amigos**: Crea registros en `SharedDocument`, solo los amigos seleccionados pueden ver
-
-### ¿Qué diferencia hay entre documento normal y oficial?
-
-- **Normal**: `isOfficial = false`, puede tener `shareToken`, lo sube cualquier usuario
-- **Oficial**: `isOfficial = true`, NO tiene `shareToken`, solo lo suben profesores/admins, acceso público pero sin compartir
-
-### ¿Cómo funcionan los favoritos?
-
-Se crea un registro en la colección `Favorite` con `userId` y `documentId`. Para obtener favoritos, se busca en `Favorite` donde `userId` coincide y se popula la información del documento.
-
-### ¿Cómo se actualiza el estado de "en línea"?
-
-El middleware `updateLastSeen` se ejecuta en cada request autenticado y actualiza `lastSeen` y `isOnline = true`. Para marcar como offline, se llama a `setOffline()` en logout.
-
-### ¿Cómo funcionan las notificaciones?
-
-Cuando ocurre un evento (solicitud de amistad, documento compartido, etc.), el backend crea un registro en `Notification`. El frontend consulta `/api/notifications` y muestra las notificaciones no leídas.
-
-### ¿Qué es AuditLog?
-
-Registro de todas las acciones importantes en el sistema (upload, delete, download, view, share). Solo los admins pueden ver los logs. Se usa para auditoría y seguridad.
-
-### ¿Cómo se valida que un usuario puede hacer una acción?
-
-1. **Autenticación**: Middleware `authenticateToken` verifica que esté autenticado
-2. **Autorización**: Se verifica en el controlador:
-   - Para documentos: verificar que `userId` del documento coincida con `req.user.userId`
-   - Para admin: verificar que `req.user.role` sea 'admin' o 'super_admin'
-   - Para documentos oficiales: verificar que el rol sea 'professor' o 'admin'
-
-### ¿Cómo se manejan los errores?
-
-**Backend:**
-- Middleware de errores en `app.js` captura todos los errores
-- Retorna formato estándar: `{ success: false, message: '...' }`
-- Diferentes códigos HTTP según el tipo de error
-
-**Frontend:**
-- `apiFetch` captura errores HTTP
-- Extrae mensaje de error de la respuesta
-- Muestra Toast con el mensaje de error
-
-### ¿Cómo se almacenan los archivos?
-
-- Los archivos se guardan en `safedocs-backend/uploads/documents/`
-- Nombres únicos: `document-{timestamp}-{random}.{ext}`
-- La ruta se guarda en `Document.filePath`
-- Para servir archivos: Express static en `/uploads`
 
 ---
 
@@ -791,27 +729,7 @@ Registro de todas las acciones importantes en el sistema (upload, delete, downlo
 - Las notificaciones se crean automáticamente en ciertos eventos (solicitud de amistad, documento compartido)
 - El sistema usa JWT sin refresh tokens (el token expira y el usuario debe hacer login nuevamente)
 
----
 
-## 🔍 Archivos Clave para Revisar
-
-**Backend:**
-- `server.js` - Punto de entrada
-- `app.js` - Configuración Express
-- `middleware/auth.js` - Autenticación JWT
-- `controllers/DocumentController.js` - Lógica de documentos
-- `controllers/ControladorAutenticacion.js` - Lógica de autenticación
-- `models/User.js` - Modelo de usuario
-- `models/Document.js` - Modelo de documento
-
-**Frontend:**
-- `App.jsx` - Componente raíz
-- `contexts/AuthContext.jsx` - Estado de autenticación
-- `utils/api.js` - Cliente HTTP
-- `components/Dashboard.jsx` - Vista principal
-- `components/VistaUsuario.jsx` - Vista de usuario
-
----
 
 *Documentación actualizada para SafeDocs UNAB - Sistema de gestión de documentos académicos*
 
