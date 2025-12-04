@@ -4,11 +4,12 @@ import { Edit, X, Save } from 'lucide-react'
 import { useDocuments } from '../contexts/DocumentContext'
 
 function ModalEditarDocumento({ documento, onClose, onSuccess }) {
-  const { updateDocument, loading } = useDocuments()
+  const { updateDocument, loading, error } = useDocuments()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('')
   const [course, setCourse] = useState('')
+  const [localError, setLocalError] = useState('')
 
   const mapCategoryFromBackend = (category) => {
     const mapping = {
@@ -26,6 +27,7 @@ function ModalEditarDocumento({ documento, onClose, onSuccess }) {
       setDescription(documento.description || '')
       setCategory(mapCategoryFromBackend(documento.category))
       setCourse(documento.course || '')
+      setLocalError('')
     }
   }, [documento])
 
@@ -33,9 +35,15 @@ function ModalEditarDocumento({ documento, onClose, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setLocalError('')
     
     if (!title.trim()) {
-      alert('El título es obligatorio')
+      setLocalError('El título es obligatorio')
+      return
+    }
+
+    if (!course.trim()) {
+      setLocalError('El curso es obligatorio')
       return
     }
 
@@ -50,6 +58,8 @@ function ModalEditarDocumento({ documento, onClose, onSuccess }) {
     if (success) {
       onSuccess && onSuccess()
       onClose()
+    } else {
+      setLocalError(error || 'Error al actualizar el documento. Por favor, intenta nuevamente.')
     }
   }
 
@@ -85,6 +95,11 @@ function ModalEditarDocumento({ documento, onClose, onSuccess }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {(localError || error) && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {localError || error}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Título del documento *

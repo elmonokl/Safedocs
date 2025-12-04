@@ -127,7 +127,11 @@ const documentValidations = {
     
     body('category')
       .optional()
-      .isIn(['academic', 'research', 'project', 'other'])
+      .custom((value) => {
+        const allowed = ['academic', 'research', 'project', 'other'];
+        const allowedEs = ['Apuntes', 'Guías', 'Resumen', 'Resúmenes', 'Pruebas', 'Otro', 'Otros'];
+        return allowed.includes(value) || allowedEs.includes(value);
+      })
       .withMessage('Categoría inválida'),
     
     body('course')
